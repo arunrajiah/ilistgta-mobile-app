@@ -23,8 +23,10 @@ export default function HomeScreen() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   async function fetchAll() {
+    setError('');
     try {
       const [cats, listData, eventData, couponData] = await Promise.all([
         getCategories('business'),
@@ -36,8 +38,8 @@ export default function HomeScreen() {
       setListings(listData.listings);
       setEvents(eventData.events);
       setCoupons(couponData.coupons);
-    } catch (e) {
-      console.error('Home fetch error:', e);
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -56,6 +58,17 @@ export default function HomeScreen() {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loader}>
+        <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+        <TouchableOpacity onPress={() => { setLoading(true); fetchAll(); }} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }

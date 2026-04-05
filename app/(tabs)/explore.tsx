@@ -30,20 +30,22 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getCategories('business').then(setCategories).catch(console.error);
   }, []);
 
   async function fetchListings(pg = 1, reset = false) {
+    if (reset) setError('');
     try {
       if (reset) setLoading(true); else if (pg > 1) setLoadingMore(true);
       const data = await getListings({ query: search, category: activeCategory, city, page: pg, limit: PAGE_SIZE });
       setListings(prev => reset ? data.listings : [...prev, ...data.listings]);
       setTotalPages(data.pagination.pages);
       setPage(pg);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (reset) setError(e.message ?? 'Failed to load listings. Please try again.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -108,6 +110,13 @@ export default function ExploreScreen() {
       {loading ? (
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : error ? (
+        <View style={styles.loader}>
+          <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchListings(1, true)} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
+            <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList

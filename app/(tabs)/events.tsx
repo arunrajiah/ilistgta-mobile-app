@@ -23,20 +23,22 @@ export default function EventsScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getCategories('event').then(setCategories).catch(console.error);
   }, []);
 
   async function fetchEvents(pg = 1, reset = false) {
+    if (reset) setError('');
     try {
       if (reset) setLoading(true); else if (pg > 1) setLoadingMore(true);
       const data = await getEvents({ category: activeCategory, page: pg, limit: PAGE_SIZE });
       setEvents(prev => reset ? data.events : [...prev, ...data.events]);
       setTotalPages(data.pagination.pages);
       setPage(pg);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (reset) setError(e.message ?? 'Failed to load events. Please try again.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -77,6 +79,13 @@ export default function EventsScreen() {
 
       {loading ? (
         <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>
+      ) : error ? (
+        <View style={styles.loader}>
+          <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchEvents(1, true)} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
+            <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={events}

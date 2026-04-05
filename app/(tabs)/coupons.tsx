@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCoupons } from '@/lib/api';
 import { Coupon } from '@/lib/types';
-import { Colors, FontSize, Spacing, Shadow } from '@/constants/theme';
+import { Colors, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
 import CouponCard from '@/components/CouponCard';
 
 const PAGE_SIZE = 12;
@@ -19,16 +19,18 @@ export default function CouponsScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   async function fetchCoupons(pg = 1, reset = false) {
+    if (reset) setError('');
     try {
       if (reset) setLoading(true); else if (pg > 1) setLoadingMore(true);
       const data = await getCoupons({ page: pg, limit: PAGE_SIZE });
       setCoupons(prev => reset ? data.coupons : [...prev, ...data.coupons]);
       setTotalPages(data.pagination.pages);
       setPage(pg);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (reset) setError(e.message ?? 'Failed to load deals. Please try again.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -49,6 +51,13 @@ export default function CouponsScreen() {
 
       {loading ? (
         <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>
+      ) : error ? (
+        <View style={styles.loader}>
+          <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchCoupons(1, true)} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
+            <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={coupons}
