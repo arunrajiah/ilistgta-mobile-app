@@ -70,9 +70,17 @@ export default function ProfileScreen() {
   const displayName = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'User';
   const avatarUrl = user.user_metadata?.avatar_url;
 
+  const isVendor = user.app_metadata?.role === 'vendor' || user.user_metadata?.role === 'vendor';
+
   const menuItems = [
     { icon: 'bookmark-outline', label: 'Saved Businesses', count: mySaved, onPress: () => router.push('/saved' as Href) },
     { icon: 'business-outline', label: 'My Listings', count: myListings, onPress: () => router.push('/my-listings' as Href) },
+    ...(isVendor ? [
+      { icon: 'storefront-outline', label: 'Vendor Profile', onPress: () => router.push('/vendor-profile' as Href) },
+      { icon: 'calendar-outline', label: 'My Events', onPress: () => router.push('/my-events' as Href) },
+      { icon: 'pricetags-outline', label: 'My Coupons', onPress: () => router.push('/my-coupons' as Href) },
+      { icon: 'bar-chart-outline', label: 'Analytics', onPress: () => router.push('/analytics' as Href) },
+    ] : []),
     { icon: 'mail-outline', label: 'Enquiries', onPress: () => router.push('/enquiries' as Href) },
     { icon: 'settings-outline', label: 'Account Settings', onPress: () => router.push('/account-settings' as Href) },
     { icon: 'help-circle-outline', label: 'Help & Support', onPress: () => router.push('/help' as Href) },

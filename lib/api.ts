@@ -1,4 +1,4 @@
-import { Category, Coupon, Event, Listing, Pagination, Review, UserProfile } from './types';
+import { AnalyticsEnquiry, AnalyticsLog, Category, Coupon, Event, Listing, Pagination, Review, UserProfile, VendorCoupon, VendorEvent, VendorProfile } from './types';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -211,6 +211,81 @@ export async function getMyEnquiries(token: string) {
       business_listings?: { id: string; name: string; slug: string; city: string };
     }>;
   }>('/api/v1/me/enquiries', {}, token);
+}
+
+// ── Vendor Profile ────────────────────────────────────────────
+export async function getVendorProfile(token: string) {
+  return request<{ profile: VendorProfile | null }>('/api/dashboard/profile', {}, token);
+}
+
+export async function updateVendorProfile(
+  token: string,
+  data: Partial<VendorProfile> & { action?: 'submit' },
+) {
+  return request<{ ok: boolean; profile: VendorProfile }>(
+    '/api/dashboard/profile',
+    { method: 'PUT', body: JSON.stringify(data) },
+    token,
+  );
+}
+
+// ── Vendor Events ─────────────────────────────────────────────
+export async function getMyEvents(token: string) {
+  return request<{ events: VendorEvent[] }>('/api/dashboard/events', {}, token);
+}
+
+export async function createVendorEvent(token: string, form: Omit<VendorEvent, 'id' | 'slug' | 'status' | 'categories'>) {
+  return request<{ ok: boolean }>(
+    '/api/dashboard/events',
+    { method: 'POST', body: JSON.stringify({ form }) },
+    token,
+  );
+}
+
+export async function updateVendorEvent(token: string, id: string, form: Partial<Omit<VendorEvent, 'id' | 'slug' | 'status' | 'categories'>>) {
+  return request<{ ok: boolean }>(
+    `/api/dashboard/events/${id}`,
+    { method: 'PATCH', body: JSON.stringify({ form }) },
+    token,
+  );
+}
+
+export async function deleteVendorEvent(token: string, id: string) {
+  await request(`/api/dashboard/events/${id}`, { method: 'DELETE' }, token);
+}
+
+// ── Vendor Coupons ────────────────────────────────────────────
+export async function getMyCoupons(token: string) {
+  return request<{ coupons: VendorCoupon[] }>('/api/dashboard/coupons', {}, token);
+}
+
+export async function createVendorCoupon(token: string, form: Omit<VendorCoupon, 'id' | 'status' | 'business_listings'>) {
+  return request<{ ok: boolean }>(
+    '/api/dashboard/coupons',
+    { method: 'POST', body: JSON.stringify({ form }) },
+    token,
+  );
+}
+
+export async function updateVendorCoupon(token: string, id: string, form: Partial<Omit<VendorCoupon, 'id' | 'status' | 'business_listings'>>) {
+  return request<{ ok: boolean }>(
+    `/api/dashboard/coupons/${id}`,
+    { method: 'PATCH', body: JSON.stringify({ form }) },
+    token,
+  );
+}
+
+export async function deleteVendorCoupon(token: string, id: string) {
+  await request(`/api/dashboard/coupons/${id}`, { method: 'DELETE' }, token);
+}
+
+// ── Analytics ─────────────────────────────────────────────────
+export async function getAnalytics(token: string, days = 30) {
+  return request<{ viewLogs: AnalyticsLog[]; enquiries: AnalyticsEnquiry[] }>(
+    `/api/dashboard/analytics?days=${days}`,
+    {},
+    token,
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────

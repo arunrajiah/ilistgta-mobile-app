@@ -36,6 +36,14 @@ export default function RootLayout() {
         <Stack.Screen name="listing/new" options={{ headerShown: false }} />
         <Stack.Screen name="listing/[id]/edit" options={{ headerShown: false }} />
         <Stack.Screen name="my-listings" options={{ headerShown: false }} />
+        <Stack.Screen name="my-events" options={{ headerShown: false }} />
+        <Stack.Screen name="my-coupons" options={{ headerShown: false }} />
+        <Stack.Screen name="vendor-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="analytics" options={{ headerShown: false }} />
+        <Stack.Screen name="event-form/new" options={{ headerShown: false }} />
+        <Stack.Screen name="event-form/[id]/edit" options={{ headerShown: false }} />
+        <Stack.Screen name="coupon-form/new" options={{ headerShown: false }} />
+        <Stack.Screen name="coupon-form/[id]/edit" options={{ headerShown: false }} />
         <Stack.Screen name="enquiries" options={{ headerShown: false }} />
         <Stack.Screen name="saved" options={{ headerShown: false }} />
         <Stack.Screen name="account-settings" options={{ headerShown: false }} />

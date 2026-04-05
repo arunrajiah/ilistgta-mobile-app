@@ -32,6 +32,8 @@ export interface Listing {
   created_at?: string;
   category_id?: string;
   postal_code?: string;
+  latitude?: number;
+  longitude?: number;
   categories?: Category;
   listing_images?: ListingImage[];
 }
@@ -98,4 +100,79 @@ export interface Pagination {
   limit: number;
   total: number;
   pages: number;
+}
+
+export interface SocialMedia {
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  linkedin?: string;
+  youtube?: string;
+  tiktok?: string;
+}
+
+export interface VendorProfile {
+  id?: string;
+  vendor_id?: string;
+  business_name?: string;
+  tagline?: string;
+  description?: string;
+  cover_image_url?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  social_media?: SocialMedia;
+  status?: 'draft' | 'pending_review' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  updated_at?: string;
+}
+
+export interface VendorEvent {
+  id: string;
+  title: string;
+  slug?: string;
+  city?: string;
+  address?: string;
+  start_date: string;
+  end_date?: string;
+  is_free: boolean;
+  price?: number;
+  is_online: boolean;
+  ticket_url?: string;
+  image_url?: string;
+  status?: 'draft' | 'pending' | 'approved' | 'rejected';
+  category_id?: string;
+  listing_id?: string;
+  description?: string;
+  categories?: Category;
+}
+
+export interface VendorCoupon {
+  id: string;
+  title: string;
+  description?: string;
+  discount_type: 'percentage' | 'fixed' | 'bogo' | 'other';
+  discount_value?: number;
+  code?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: 'draft' | 'pending' | 'approved' | 'rejected';
+  listing_id: string;
+  business_listings?: { name: string; slug: string } | null;
+}
+
+export interface AnalyticsLog {
+  page: string;
+  created_at: string;
+}
+
+export interface AnalyticsEnquiry {
+  id: string;
+  listing_id: string;
+  created_at: string;
+  name: string;
+  message: string;
 }
