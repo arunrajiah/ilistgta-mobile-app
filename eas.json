@@ -1,0 +1,52 @@
+{
+  "cli": {
+    "version": ">= 13.0.0",
+    "requireCommit": true
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.com"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.com"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      },
+      "ios": {
+        "ascApiKeyPath": "~/.appstoreconnect/private_keys/AuthKey_$(ASC_API_KEY_ID).p8",
+        "ascApiKeyId": "$(ASC_API_KEY_ID)",
+        "ascApiKeyIssuerId": "$(ASC_API_KEY_ISSUER_ID)"
+      }
+    }
+  }
+}

@@ -1,0 +1,192 @@
+name: EAS Build & Submit
+
+on:
+  push:
+    branches:
+      - main        # production build + submit to stores
+      - develop     # preview build only
+      - 'release/*' # preview build only
+  pull_request:
+    branches:
+      - main        # preview build on PR (no submit)
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile to use'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      submit:
+        description: 'Submit to app stores after build?'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Preview build — runs on all branches except main
+  # ─────────────────────────────────────────────
+  preview-build:
+    name: Preview Build (Internal Testing)
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android APK (preview)
+        run: eas build --platform android --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS IPA (preview)
+        run: eas build --platform ios --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # ─────────────────────────────────────────────
+  # Production build + store submission — main only
+  # ─────────────────────────────────────────────
+  production-build-and-submit:
+    name: Production Build & Submit
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Write the Google Play service account key from secret
+      - name: Write Google Play service account key
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > ./google-service-account.json
+
+      # Write the App Store Connect API key from secret
+      - name: Write App Store Connect API key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo '${{ secrets.ASC_API_KEY }}' > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+
+      # Build Android AAB for Play Store
+      - name: Build Android (production)
+        run: eas build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # Build iOS IPA for App Store
+      - name: Build iOS (production)
+        run: eas build --platform ios --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+
+      # Submit Android to Play Store (internal track)
+      - name: Submit Android to Play Store
+        run: eas submit --platform android --profile production --non-interactive --latest
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # Submit iOS to App Store Connect (TestFlight)
+      - name: Submit iOS to App Store Connect
+        run: eas submit --platform ios --profile production --non-interactive --latest
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+
+      # Clean up sensitive key files
+      - name: Cleanup credential files
+        if: always()
+        run: |
+          rm -f ./google-service-account.json
+          rm -f ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+
+  # ─────────────────────────────────────────────
+  # Manual dispatch — build (and optionally submit)
+  # ─────────────────────────────────────────────
+  manual-build:
+    name: Manual Build (${{ github.event.inputs.profile }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Write Google Play service account key
+        if: github.event.inputs.submit == 'true'
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > ./google-service-account.json
+
+      - name: Write App Store Connect API key
+        if: github.event.inputs.submit == 'true'
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo '${{ secrets.ASC_API_KEY }}' > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+
+      - name: Build both platforms
+        run: eas build --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+
+      - name: Submit to stores
+        if: github.event.inputs.submit == 'true' && github.event.inputs.profile == 'production'
+        run: eas submit --platform all --profile production --non-interactive --latest
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+
+      - name: Cleanup credential files
+        if: always()
+        run: |
+          rm -f ./google-service-account.json
+          rm -f ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8 2>/dev/null || true
