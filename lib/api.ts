@@ -1,4 +1,4 @@
-import { AnalyticsEnquiry, AnalyticsLog, Category, Coupon, Event, Listing, Pagination, Review, UserProfile, VendorCoupon, VendorEvent, VendorProfile } from './types';
+import { AnalyticsEnquiry, AnalyticsLog, Banner, BlogPost, Category, Coupon, Event, Listing, Pagination, Review, UserProfile, VendorCoupon, VendorEvent, VendorProfile } from './types';
 
 const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -305,4 +305,31 @@ export function formatDiscount(type: string, value: number) {
   if (type === 'fixed') return `$${value} OFF`;
   if (type === 'bogo') return 'BOGO';
   return 'DEAL';
+}
+
+// ── Banners ───────────────────────────────────────────────────────────────────
+export async function getBanners(params: { page?: string; category?: string; location?: string; limit?: number } = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', params.page);
+  if (params.category) q.set('category', params.category);
+  if (params.location) q.set('location', params.location);
+  if (params.limit) q.set('limit', String(params.limit));
+  return request<{ banners: Banner[] }>(`/api/public/banners?${q.toString()}`);
+}
+
+// ── Blog ──────────────────────────────────────────────────────────────────────
+export async function getBlogPosts(params: { page?: number; limit?: number } = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  return request<{ posts: BlogPost[]; total: number; page: number; pages: number }>(`/api/v1/blog?${q.toString()}`);
+}
+
+export async function getBlogPost(slug: string) {
+  return request<{ post: BlogPost }>(`/api/v1/blog/${slug}`);
+}
+
+// ── Contact ───────────────────────────────────────────────────────────────────
+export async function submitContact(data: { name: string; email: string; subject?: string; message: string }) {
+  return request('/api/contact', { method: 'POST', body: JSON.stringify(data) });
 }
