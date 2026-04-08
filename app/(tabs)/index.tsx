@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  FlatList, RefreshControl, ActivityIndicator,
+  FlatList, RefreshControl, ActivityIndicator, TextInput, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, Radius, Shadow } from '@/constants/theme';
-import { getCategories, getListings, getEvents, getCoupons } from '@/lib/api';
-import { Category, Listing, Event, Coupon } from '@/lib/types';
+import { getCategories, getListings, getEvents, getCoupons, getBanners } from '@/lib/api';
+import { Category, Listing, Event, Coupon, Banner } from '@/lib/types';
 import ListingCard from '@/components/ListingCard';
 import EventCard from '@/components/EventCard';
 import CouponCard from '@/components/CouponCard';
 import SearchBar from '@/components/SearchBar';
+import BannerCard from '@/components/BannerCard';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -21,9 +22,13 @@ export default function HomeScreen() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
   async function fetchAll() {
     setError('');
@@ -44,6 +49,14 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
+
+    // Fetch banners separately - don't block main content on failure
+    try {
+      const bannerData = await getBanners({ page: 'home', limit: 5 });
+      setBanners(bannerData.banners ?? []);
+    } catch {
+      // Banners are non-critical, silently ignore
+    }
   }
 
   useEffect(() => { fetchAll(); }, []);
@@ -52,6 +65,27 @@ export default function HomeScreen() {
 
   function handleSearch() {
     if (search.trim()) router.push({ pathname: '/(tabs)/explore', params: { q: search.trim() } });
+  }
+
+  async function handleSubscribe() {
+    if (!newsletterEmail.trim() || !newsletterEmail.includes('@')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    setSubscribing(true);
+    try {
+      const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
+      await fetch(`${BASE_URL}/api/newsletter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newsletterEmail.trim() }),
+      });
+      setSubscribed(true);
+    } catch {
+      Alert.alert('Error', 'Failed to subscribe. Please try again.');
+    } finally {
+      setSubscribing(false);
+    }
   }
 
   if (loading) {
@@ -87,6 +121,9 @@ export default function HomeScreen() {
           <SearchBar value={search} onChangeText={setSearch} onSubmit={handleSearch} />
         </View>
       </LinearGradient>
+
+      {/* Banners */}
+      {banners.length > 0 && <BannerCard banners={banners} />}
 
       {/* Categories */}
       <View style={styles.section}>
@@ -162,6 +199,43 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Newsletter */}
+      <View style={styles.section}>
+        <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.newsletter}>
+          <Text style={styles.newsletterTitle}>Stay in the Loop</Text>
+          <Text style={styles.newsletterSub}>Get the latest GTA business news & deals</Text>
+          {subscribed ? (
+            <View style={styles.subscribedRow}>
+              <Ionicons name="checkmark-circle" size={20} color="#fff" />
+              <Text style={styles.subscribedText}>You're subscribed!</Text>
+            </View>
+          ) : (
+            <View style={styles.newsletterRow}>
+              <TextInput
+                style={styles.newsletterInput}
+                placeholder="Your email address"
+                placeholderTextColor="rgba(255,255,255,0.65)"
+                value={newsletterEmail}
+                onChangeText={setNewsletterEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={styles.subscribeBtn}
+                onPress={handleSubscribe}
+                disabled={subscribing}
+                activeOpacity={0.85}
+              >
+                {subscribing
+                  ? <ActivityIndicator color={Colors.primary} size="small" />
+                  : <Text style={styles.subscribeBtnText}>Subscribe</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          )}
+        </LinearGradient>
+      </View>
+
       <View style={{ height: Spacing.xxl }} />
     </ScrollView>
   );
@@ -187,4 +261,23 @@ const styles = StyleSheet.create({
   },
   categoryIcon: { fontSize: 24, marginBottom: 4 },
   categoryName: { fontSize: FontSize.xs, fontWeight: '600', color: Colors.text, textAlign: 'center' },
+  newsletter: {
+    borderRadius: Radius.lg, padding: Spacing.lg, gap: Spacing.sm, marginBottom: Spacing.sm,
+  },
+  newsletterTitle: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
+  newsletterSub: { color: 'rgba(255,255,255,0.85)', fontSize: FontSize.sm, marginBottom: Spacing.sm },
+  newsletterRow: { flexDirection: 'row', gap: Spacing.sm },
+  newsletterInput: {
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md, paddingVertical: 10,
+    color: '#fff', fontSize: FontSize.sm,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)',
+  },
+  subscribeBtn: {
+    backgroundColor: '#fff', borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md, justifyContent: 'center', alignItems: 'center',
+  },
+  subscribeBtnText: { color: Colors.primary, fontWeight: '700', fontSize: FontSize.sm },
+  subscribedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  subscribedText: { color: '#fff', fontWeight: '600', fontSize: FontSize.base },
 });
