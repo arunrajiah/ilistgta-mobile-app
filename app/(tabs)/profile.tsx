@@ -85,6 +85,8 @@ export default function ProfileScreen() {
     { icon: 'settings-outline', label: 'Account Settings', onPress: () => router.push('/account-settings' as Href) },
     { icon: 'help-circle-outline', label: 'Help & Support', onPress: () => router.push('/help' as Href) },
     { icon: 'information-circle-outline', label: 'About iListGTA', onPress: () => router.push('/about' as Href) },
+    { icon: 'newspaper-outline', label: 'Blog & Articles', onPress: () => router.push('/blog' as Href) },
+    { icon: 'chatbubble-ellipses-outline', label: 'Contact Us', onPress: () => router.push('/contact' as Href) },
   ];
 
 
