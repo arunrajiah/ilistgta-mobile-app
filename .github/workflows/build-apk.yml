@@ -1,0 +1,111 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # ubuntu-latest ships with Android SDK; expose env vars Gradle needs
+      - name: Set up Android SDK environment
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
+          echo "/usr/local/lib/android/sdk/tools/bin"       >> $GITHUB_PATH
+
+      # Expo prebuild generates the native android/ folder from your JS project
+      - name: Generate native Android project (expo prebuild)
+        run: npx expo prebuild --platform android --no-install
+        env:
+          EXPO_NO_TELEMETRY: 1
+
+      - name: Make Gradlew executable
+        run: chmod +x android/gradlew
+
+      # Determine build type: release on tags or explicit input, debug otherwise
+      - name: Determine build variant
+        id: variant
+        run: |
+          if [[ "${{ github.event.inputs.build_type }}" == "release" || "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "type=release" >> $GITHUB_OUTPUT
+            echo "task=assembleRelease" >> $GITHUB_OUTPUT
+            echo "apk_dir=release" >> $GITHUB_OUTPUT
+          else
+            echo "type=debug" >> $GITHUB_OUTPUT
+            echo "task=assembleDebug" >> $GITHUB_OUTPUT
+            echo "apk_dir=debug" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build APK (${{ steps.variant.outputs.type }})
+        working-directory: android
+        run: ./gradlew ${{ steps.variant.outputs.task }} --no-daemon
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
+
+      - name: Get app version
+        id: app_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Locate & rename APK
+        id: apk
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/${{ steps.variant.outputs.apk_dir }} -name "*.apk" | head -1)
+          TIMESTAMP=$(date +%Y%m%d%H%M)
+          APK_NAME="ilistgta-v${{ steps.app_version.outputs.version }}-${{ steps.variant.outputs.type }}-${TIMESTAMP}.apk"
+          cp "$APK_PATH" "$APK_NAME"
+          echo "path=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "name=$APK_NAME" >> $GITHUB_OUTPUT
+
+      # Always upload APK as a downloadable Actions artifact (30-day retention)
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ilistgta-apk-v${{ steps.app_version.outputs.version }}-${{ steps.variant.outputs.type }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
+
+      # On version tags (v1.0.0 etc.), create a GitHub Release and attach the APK
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: iListGTA ${{ github.ref_name }}
+          files: ${{ steps.apk.outputs.path }}
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
