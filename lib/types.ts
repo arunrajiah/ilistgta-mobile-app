@@ -176,3 +176,26 @@ export interface AnalyticsEnquiry {
   name: string;
   message: string;
 }
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  image_url?: string;
+  cta_text?: string;
+  cta_link?: string;
+  status: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content?: string;
+  author_name?: string;
+  category?: string;
+  read_time?: number;
+  cover_image?: string;
+  created_at: string;
+}
