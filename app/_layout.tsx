@@ -12,14 +12,28 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    SplashScreen.hideAsync();
+    // Fetch remote config first, then hide splash. Falls back to DEFAULT_CONFIG on any error.
+    // A 3-second safety timeout ensures splash always hides even if the fetch hangs.
+    const safetyTimer = setTimeout(() => {
+      setReady(true);
+      SplashScreen.hideAsync();
+    }, 3000);
+
+    fetchAppConfig().then(cfg => {
+      clearTimeout(safetyTimer);
+      setAppConfig(cfg);
+      setReady(true);
+      SplashScreen.hideAsync();
+    });
+
+    return () => clearTimeout(safetyTimer);
   }, []);
 
-  useEffect(() => {
-    fetchAppConfig().then(setAppConfig);
-  }, []);
+  // Keep native splash visible until config is loaded (max 3 s via safety timer)
+  if (!ready) return null;
 
   if (appConfig.maintenance) {
     return (

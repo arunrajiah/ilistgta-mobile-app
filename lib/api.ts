@@ -6,20 +6,36 @@ if (!BASE_URL) {
   console.warn('[api] EXPO_PUBLIC_API_BASE_URL is not set. API calls will fail.');
 }
 
+const REQUEST_TIMEOUT_MS = 15_000; // 15 seconds — prevents indefinite hangs on mobile
+
 async function request<T>(path: string, options?: RequestInit, token?: string): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  // Parse JSON after checking ok so non-JSON error bodies (e.g. 502 HTML) don't mask the real status
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`;
-    try { const json = await res.json(); message = json.error ?? message; } catch { /* ignore */ }
-    throw new Error(message);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    // Parse JSON after checking ok so non-JSON error bodies (e.g. 502 HTML) don't mask the real status
+    if (!res.ok) {
+      let message = `Request failed: ${res.status}`;
+      try { const json = await res.json(); message = json.error ?? message; } catch { /* ignore */ }
+      throw new Error(message);
+    }
+
+    return res.json() as Promise<T>;
+  } catch (err: any) {
+    if (err.name === 'AbortError') throw new Error('Request timed out. Check your connection.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-
-  return res.json() as Promise<T>;
 }
 
 // ── Categories ───────────────────────────────────────────────

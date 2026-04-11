@@ -33,29 +33,30 @@ export default function HomeScreen() {
   async function fetchAll() {
     setError('');
     try {
-      const [cats, listData, eventData, couponData] = await Promise.all([
+      // Use allSettled so one failing endpoint doesn't block the rest
+      const [catsResult, listResult, eventResult, couponResult, bannerResult] = await Promise.allSettled([
         getCategories('business'),
         getListings({ limit: 8 }),
         getEvents({ limit: 6 }),
         getCoupons({ limit: 6 }),
+        getBanners({ page: 'home', limit: 5 }),
       ]);
-      setCategories(cats);
-      setListings(listData.listings);
-      setEvents(eventData.events);
-      setCoupons(couponData.coupons);
-    } catch (e: any) {
-      setError(e.message ?? 'Failed to load. Please try again.');
+
+      if (catsResult.status === 'fulfilled')   setCategories(catsResult.value);
+      if (listResult.status === 'fulfilled')   setListings(listResult.value.listings);
+      if (eventResult.status === 'fulfilled')  setEvents(eventResult.value.events);
+      if (couponResult.status === 'fulfilled') setCoupons(couponResult.value.coupons);
+      if (bannerResult.status === 'fulfilled') setBanners(bannerResult.value.banners ?? []);
+
+      // Only show error if ALL content requests failed
+      const allFailed = [catsResult, listResult, eventResult, couponResult].every(r => r.status === 'rejected');
+      if (allFailed) {
+        const firstErr = (catsResult as PromiseRejectedResult).reason;
+        setError(firstErr?.message ?? 'Failed to load. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-
-    // Fetch banners separately - don't block main content on failure
-    try {
-      const bannerData = await getBanners({ page: 'home', limit: 5 });
-      setBanners(bannerData.banners ?? []);
-    } catch {
-      // Banners are non-critical, silently ignore
     }
   }
 
@@ -88,25 +89,6 @@ export default function HomeScreen() {
     }
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.loader}>
-        <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
-        <TouchableOpacity onPress={() => { setLoading(true); fetchAll(); }} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
-          <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       style={styles.container}
@@ -122,10 +104,31 @@ export default function HomeScreen() {
         </View>
       </LinearGradient>
 
+      {/* Loading indicator (inline, below hero so hero is always visible) */}
+      {loading && (
+        <View style={styles.inlineLoader}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      )}
+
+      {/* Connection error (inline, retryable) */}
+      {!loading && error ? (
+        <View style={styles.inlineError}>
+          <Text style={styles.inlineErrorText}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => { setLoading(true); fetchAll(); }}
+            style={styles.retryBtn}
+          >
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       {/* Banners */}
-      {banners.length > 0 && <BannerCard banners={banners} />}
+      {!loading && banners.length > 0 && <BannerCard banners={banners} />}
 
       {/* Categories */}
+      {!loading && (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Browse by Category</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
@@ -235,6 +238,7 @@ export default function HomeScreen() {
           )}
         </LinearGradient>
       </View>
+      )}
 
       <View style={{ height: Spacing.xxl }} />
     </ScrollView>
@@ -243,7 +247,11 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surfaceSecondary },
+  inlineLoader: { paddingVertical: 48, alignItems: 'center', justifyContent: 'center' },
+  inlineError: { margin: Spacing.md, padding: Spacing.lg, backgroundColor: '#fef2f2', borderRadius: Radius.lg, alignItems: 'center', gap: Spacing.sm },
+  inlineErrorText: { color: '#b91c1c', fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
+  retryBtn: { backgroundColor: Colors.primary, paddingHorizontal: Spacing.lg, paddingVertical: 8, borderRadius: Radius.full },
+  retryBtnText: { color: '#fff', fontWeight: '700', fontSize: FontSize.sm },
   hero: { paddingTop: 64, paddingBottom: 36, paddingHorizontal: Spacing.lg },
   heroEyebrow: { color: 'rgba(255,255,255,0.75)', fontSize: FontSize.sm, fontWeight: '600', marginBottom: 6 },
   heroTitle: { color: '#fff', fontSize: FontSize.xxl, fontWeight: '800', lineHeight: 36, marginBottom: Spacing.lg },
