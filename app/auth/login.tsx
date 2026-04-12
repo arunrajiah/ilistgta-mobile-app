@@ -6,17 +6,19 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useLang } from '@/lib/i18n';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
     if (!email.trim() || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password.');
+      Alert.alert(t('auth.error'), 'Please enter your email and password.');
       return;
     }
     setLoading(true);
@@ -24,7 +26,7 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
       router.back();
     } catch (e: any) {
-      Alert.alert('Sign in failed', e.message ?? 'Invalid email or password.');
+      Alert.alert(t('auth.loginFailed'), e.message ?? 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>{t('auth.email')}</Text>
           <TextInput
             style={styles.input}
             value={email}
@@ -50,7 +52,7 @@ export default function LoginScreen() {
             autoCorrect={false}
           />
 
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>{t('auth.password')}</Text>
           <TextInput
             style={styles.input}
             value={password}
@@ -60,15 +62,15 @@ export default function LoginScreen() {
           />
 
           <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={handleLogin} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('auth.signIn')}</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/auth/forgot-password')}>
-            <Text style={styles.linkText}>Forgot password? <Text style={styles.link}>Reset it</Text></Text>
+            <Text style={styles.linkText}>{t('auth.forgotPassword')} <Text style={styles.link}>Reset it</Text></Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/auth/register')}>
-            <Text style={styles.linkText}>Don't have an account? <Text style={styles.link}>Create one</Text></Text>
+            <Text style={styles.linkText}>{t('auth.noAccount')} <Text style={styles.link}>Create one</Text></Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

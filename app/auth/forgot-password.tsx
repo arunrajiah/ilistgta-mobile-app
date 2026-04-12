@@ -6,16 +6,18 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { useLang } from '@/lib/i18n';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
   async function handleReset() {
     if (!email.trim() || !email.includes('@')) {
-      Alert.alert('Invalid email', 'Please enter a valid email address.');
+      Alert.alert(t('auth.error'), 'Please enter a valid email address.');
       return;
     }
     setLoading(true);
@@ -26,7 +28,7 @@ export default function ForgotPasswordScreen() {
       if (error) throw error;
       setSent(true);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to send reset email.');
+      Alert.alert(t('auth.error'), e.message ?? 'Failed to send reset email.');
     } finally {
       setLoading(false);
     }
@@ -37,25 +39,23 @@ export default function ForgotPasswordScreen() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logo}>
           <Text style={styles.logoText}>iList<Text style={styles.logoGta}>GTA</Text></Text>
-          <Text style={styles.logoSub}>Reset your password</Text>
+          <Text style={styles.logoSub}>{t('auth.resetPassword')}</Text>
         </View>
 
         {sent ? (
           <View style={styles.successBox}>
-            <Text style={styles.successTitle}>Check your inbox</Text>
-            <Text style={styles.successMsg}>
-              We've sent a password reset link to {email}. Follow the link in the email to set a new password.
-            </Text>
+            <Text style={styles.successTitle}>{t('auth.resetSent')}</Text>
+            <Text style={styles.successMsg}>{t('auth.resetInstruction')}</Text>
             <TouchableOpacity style={styles.btn} onPress={() => router.replace('/auth/login')}>
-              <Text style={styles.btnText}>Back to Sign In</Text>
+              <Text style={styles.btnText}>{t('auth.backToLogin')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.form}>
             <Text style={styles.instructions}>
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a link to reset your password.
             </Text>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t('auth.email')}</Text>
             <TextInput
               style={styles.input}
               value={email}
@@ -67,10 +67,10 @@ export default function ForgotPasswordScreen() {
               autoFocus
             />
             <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={handleReset} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Send Reset Link</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{t('auth.sendReset')}</Text>}
             </TouchableOpacity>
             <TouchableOpacity style={styles.linkRow} onPress={() => router.back()}>
-              <Text style={styles.linkText}>← Back to Sign In</Text>
+              <Text style={styles.linkText}>← {t('auth.backToLogin')}</Text>
             </TouchableOpacity>
           </View>
         )}

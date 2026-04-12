@@ -14,11 +14,13 @@ import EventCard from '@/components/EventCard';
 import CouponCard from '@/components/CouponCard';
 import SearchBar from '@/components/SearchBar';
 import BannerCard from '@/components/BannerCard';
+import { useLang } from '@/lib/i18n';
 
 type City = { id: string; name: string; slug: string; image_url?: string; count?: number };
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useLang();
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -112,7 +114,7 @@ export default function HomeScreen() {
         <View style={styles.inlineError}>
           <Text style={styles.inlineErrorText}>{error}</Text>
           <TouchableOpacity onPress={() => { setLoading(true); fetchAll(); }} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>Retry</Text>
+            <Text style={styles.retryBtnText}>{t('home.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -124,7 +126,7 @@ export default function HomeScreen() {
         <>
           {/* Categories */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Browse by Category</Text>
+            <Text style={styles.sectionTitle}>{t('home.browseCategories')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               {categories.map(cat => (
                 <TouchableOpacity
@@ -143,7 +145,7 @@ export default function HomeScreen() {
                 activeOpacity={0.75}
               >
                 <Text style={[styles.categoryIcon, { color: Colors.primary }]}>→</Text>
-                <Text style={[styles.categoryName, { color: Colors.primary, fontWeight: '700' }]}>More</Text>
+                <Text style={[styles.categoryName, { color: Colors.primary, fontWeight: '700' }]}>{t('home.more')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -152,9 +154,9 @@ export default function HomeScreen() {
           {listings.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Featured Businesses</Text>
+                <Text style={styles.sectionTitle}>{t('home.featuredBusinesses')}</Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
-                  <Text style={styles.seeAll}>See all →</Text>
+                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -174,9 +176,9 @@ export default function HomeScreen() {
           {cities.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Browse by City</Text>
+                <Text style={styles.sectionTitle}>{t('home.browseCity')}</Text>
                 <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/explore' })}>
-                  <Text style={styles.seeAll}>See all →</Text>
+                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cityScroll}>
@@ -197,7 +199,7 @@ export default function HomeScreen() {
                     <View style={styles.cityInfo}>
                       <Text style={styles.cityName} numberOfLines={1}>{city.name}</Text>
                       {city.count != null && city.count > 0 && (
-                        <Text style={styles.cityCount}>{city.count} businesses</Text>
+                        <Text style={styles.cityCount}>{city.count} {t('home.businesses')}</Text>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -210,9 +212,9 @@ export default function HomeScreen() {
           {events.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                <Text style={styles.sectionTitle}>{t('home.upcomingEvents')}</Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/events')}>
-                  <Text style={styles.seeAll}>See all →</Text>
+                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
                 </TouchableOpacity>
               </View>
               {events.slice(0, 3).map(event => (
@@ -225,13 +227,13 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Latest Deals */}
+          {/* Hot Deals & Coupons */}
           {coupons.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Hot Deals & Coupons</Text>
+                <Text style={styles.sectionTitle}>{t('home.hotDeals')}</Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/coupons')}>
-                  <Text style={styles.seeAll}>See all →</Text>
+                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
                 </TouchableOpacity>
               </View>
               {coupons.slice(0, 3).map(coupon => (
@@ -243,18 +245,18 @@ export default function HomeScreen() {
           {/* Newsletter */}
           <View style={styles.section}>
             <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.newsletter}>
-              <Text style={styles.newsletterTitle}>Stay in the Loop</Text>
-              <Text style={styles.newsletterSub}>Get the latest GTA business news & deals</Text>
+              <Text style={styles.newsletterTitle}>{t('home.newsletter')}</Text>
+              <Text style={styles.newsletterSub}>{t('home.newsletterSubtitle')}</Text>
               {subscribed ? (
                 <View style={styles.subscribedRow}>
                   <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.subscribedText}>You're subscribed!</Text>
+                  <Text style={styles.subscribedText}>{t('home.subscribed')}</Text>
                 </View>
               ) : (
                 <View style={styles.newsletterRow}>
                   <TextInput
                     style={styles.newsletterInput}
-                    placeholder="Your email address"
+                    placeholder={t('home.emailPlaceholder')}
                     placeholderTextColor="rgba(255,255,255,0.65)"
                     value={newsletterEmail}
                     onChangeText={setNewsletterEmail}
@@ -269,7 +271,7 @@ export default function HomeScreen() {
                   >
                     {subscribing
                       ? <ActivityIndicator color={Colors.primary} size="small" />
-                      : <Text style={styles.subscribeBtnText}>Subscribe</Text>
+                      : <Text style={styles.subscribeBtnText}>{t('home.subscribe')}</Text>
                     }
                   </TouchableOpacity>
                 </View>

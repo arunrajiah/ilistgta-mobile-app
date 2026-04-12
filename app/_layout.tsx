@@ -7,6 +7,7 @@ import { AuthProvider } from '@/lib/auth';
 import { Colors } from '@/constants/theme';
 import { AppConfigContext, fetchAppConfig, DEFAULT_CONFIG } from '@/lib/appConfig';
 import type { AppConfig } from '@/lib/appConfig';
+import { LangProvider } from '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -50,6 +51,7 @@ export default function RootLayout() {
 
   return (
     <AppConfigContext.Provider value={appConfig}>
+      <LangProvider>
       <AuthProvider>
         <StatusBar style="auto" />
         <Stack screenOptions={{ headerShown: false }}>
@@ -92,6 +94,7 @@ export default function RootLayout() {
           <Stack.Screen name="about" options={{ headerShown: false }} />
         </Stack>
       </AuthProvider>
+      </LangProvider>
     </AppConfigContext.Provider>
   );
 }

@@ -10,11 +10,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth';
 import { getMyListings, getMySaved } from '@/lib/api';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import { useLang } from '@/lib/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, session, signOut, loading } = useAuth();
+  const { t, lang, setLang } = useLang();
   const [myListings, setMyListings] = useState<number>(0);
   const [mySaved, setMySaved] = useState<number>(0);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -33,11 +35,11 @@ export default function ProfileScreen() {
   }, [session]);
 
   async function handleSignOut() {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('auth.signOut'), t('auth.signOutConfirm'), [
+      { text: t('auth.cancel'), style: 'cancel' },
       {
-        text: 'Sign Out', style: 'destructive',
-        onPress: async () => { try { await signOut(); } catch (e) { Alert.alert('Error', 'Failed to sign out'); } },
+        text: t('auth.signOut'), style: 'destructive',
+        onPress: async () => { try { await signOut(); } catch (e) { Alert.alert(t('auth.error'), 'Failed to sign out'); } },
       },
     ]);
   }
@@ -54,13 +56,13 @@ export default function ProfileScreen() {
           <View style={styles.avatarPlaceholder}>
             <Ionicons name="person" size={48} color={Colors.textMuted} />
           </View>
-          <Text style={styles.guestTitle}>Welcome to iListGTA</Text>
-          <Text style={styles.guestSub}>Sign in to save businesses, track your listings, and more.</Text>
+          <Text style={styles.guestTitle}>{t('profile.welcome')}</Text>
+          <Text style={styles.guestSub}>{t('profile.signInPrompt')}</Text>
           <TouchableOpacity style={styles.signInBtn} onPress={() => router.push('/auth/login')}>
-            <Text style={styles.signInBtnText}>Sign In</Text>
+            <Text style={styles.signInBtnText}>{t('auth.signIn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.registerBtn} onPress={() => router.push('/auth/register')}>
-            <Text style={styles.registerBtnText}>Create Account</Text>
+            <Text style={styles.registerBtnText}>{t('auth.createAccount')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -111,12 +113,12 @@ export default function ProfileScreen() {
         <View style={styles.statBox}>
           {statsLoading ? <ActivityIndicator color={Colors.primary} />
             : <Text style={styles.statNumber}>{myListings}</Text>}
-          <Text style={styles.statLabel}>Listings</Text>
+          <Text style={styles.statLabel}>{t('profile.myListings')}</Text>
         </View>
         <View style={[styles.statBox, styles.statBoxBorder]}>
           {statsLoading ? <ActivityIndicator color={Colors.primary} />
             : <Text style={styles.statNumber}>{mySaved}</Text>}
-          <Text style={styles.statLabel}>Saved</Text>
+          <Text style={styles.statLabel}>{t('profile.saved')}</Text>
         </View>
       </View>
 
@@ -130,11 +132,32 @@ export default function ProfileScreen() {
           <Ionicons name="add-circle" size={28} color={Colors.primary} />
         </View>
         <View style={styles.addListingText}>
-          <Text style={styles.addListingTitle}>Add a Listing</Text>
+          <Text style={styles.addListingTitle}>{t('profile.listBusiness')}</Text>
           <Text style={styles.addListingSubtitle}>Submit your business to iListGTA</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
       </TouchableOpacity>
+
+      {/* Language Switcher */}
+      <View style={styles.langSection}>
+        <Text style={styles.langSectionLabel}>{t('profile.language')}</Text>
+        <View style={styles.langRow}>
+          <TouchableOpacity
+            style={[styles.langBtn, lang === 'en' && styles.langBtnActive]}
+            onPress={() => setLang('en')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.langBtnText, lang === 'en' && styles.langBtnTextActive]}>English</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.langBtn, lang === 'ta' && styles.langBtnActive]}
+            onPress={() => setLang('ta')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.langBtnText, lang === 'ta' && styles.langBtnTextActive]}>தமிழ்</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Menu */}
       <View style={styles.menu}>
@@ -155,7 +178,7 @@ export default function ProfileScreen() {
       {/* Sign out */}
       <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
         <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-        <Text style={styles.signOutText}>Sign Out</Text>
+        <Text style={styles.signOutText}>{t('auth.signOut')}</Text>
       </TouchableOpacity>
 
       <View style={{ height: Spacing.xxl }} />
@@ -237,4 +260,20 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg, borderWidth: 1, borderColor: '#fecaca',
   },
   signOutText: { color: Colors.error, fontWeight: '700', fontSize: FontSize.base },
+  // Language switcher
+  langSection: {
+    marginHorizontal: Spacing.md, marginTop: Spacing.md,
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: Spacing.md, ...Shadow.sm,
+  },
+  langSectionLabel: { fontSize: FontSize.sm, fontWeight: '700', color: Colors.textMuted, marginBottom: Spacing.sm },
+  langRow: { flexDirection: 'row', gap: Spacing.sm },
+  langBtn: {
+    flex: 1, paddingVertical: 10, borderRadius: Radius.md,
+    alignItems: 'center', borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.surfaceSecondary,
+  },
+  langBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryBg },
+  langBtnText: { fontSize: FontSize.base, fontWeight: '600', color: Colors.textMuted },
+  langBtnTextActive: { color: Colors.primary },
 });
