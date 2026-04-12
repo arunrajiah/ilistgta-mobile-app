@@ -75,20 +75,20 @@ export default function ProfileScreen() {
   const isVendor = user.app_metadata?.role === 'vendor' || user.user_metadata?.role === 'vendor';
 
   const menuItems = [
-    { icon: 'bookmark-outline', label: 'Saved Businesses', count: mySaved, onPress: () => router.push('/saved' as Href) },
-    { icon: 'business-outline', label: 'My Listings', count: myListings, onPress: () => router.push('/my-listings' as Href) },
+    { icon: 'bookmark-outline', label: t('profile.savedBusinesses'), count: mySaved, onPress: () => router.push('/saved' as Href) },
+    { icon: 'business-outline', label: t('profile.myListings'), count: myListings, onPress: () => router.push('/my-listings' as Href) },
     ...(isVendor ? [
-      { icon: 'storefront-outline', label: 'Vendor Profile', onPress: () => router.push('/vendor-profile' as Href) },
-      { icon: 'calendar-outline', label: 'My Events', onPress: () => router.push('/my-events' as Href) },
-      { icon: 'pricetags-outline', label: 'My Coupons', onPress: () => router.push('/my-coupons' as Href) },
-      { icon: 'bar-chart-outline', label: 'Analytics', onPress: () => router.push('/analytics' as Href) },
+      { icon: 'storefront-outline', label: t('profile.vendorProfile'), onPress: () => router.push('/vendor-profile' as Href) },
+      { icon: 'calendar-outline', label: t('profile.myEvents'), onPress: () => router.push('/my-events' as Href) },
+      { icon: 'pricetags-outline', label: t('profile.myCoupons'), onPress: () => router.push('/my-coupons' as Href) },
+      { icon: 'bar-chart-outline', label: t('profile.analytics'), onPress: () => router.push('/analytics' as Href) },
     ] : []),
-    { icon: 'mail-outline', label: 'Enquiries', onPress: () => router.push('/enquiries' as Href) },
-    { icon: 'settings-outline', label: 'Account Settings', onPress: () => router.push('/account-settings' as Href) },
-    { icon: 'help-circle-outline', label: 'Help & Support', onPress: () => router.push('/help' as Href) },
-    { icon: 'information-circle-outline', label: 'About iListGTA', onPress: () => router.push('/about' as Href) },
-    { icon: 'newspaper-outline', label: 'Blog & Articles', onPress: () => router.push('/blog' as Href) },
-    { icon: 'chatbubble-ellipses-outline', label: 'Contact Us', onPress: () => router.push('/contact' as Href) },
+    { icon: 'mail-outline', label: t('profile.myEnquiries'), onPress: () => router.push('/enquiries' as Href) },
+    { icon: 'settings-outline', label: t('profile.accountSettings'), onPress: () => router.push('/account-settings' as Href) },
+    { icon: 'help-circle-outline', label: t('profile.help'), onPress: () => router.push('/help' as Href) },
+    { icon: 'information-circle-outline', label: t('profile.about'), onPress: () => router.push('/about' as Href) },
+    { icon: 'newspaper-outline', label: t('profile.blogArticles'), onPress: () => router.push('/blog' as Href) },
+    { icon: 'chatbubble-ellipses-outline', label: t('profile.contact'), onPress: () => router.push('/contact' as Href) },
   ];
 
 
@@ -132,8 +132,8 @@ export default function ProfileScreen() {
           <Ionicons name="add-circle" size={28} color={Colors.primary} />
         </View>
         <View style={styles.addListingText}>
-          <Text style={styles.addListingTitle}>{t('profile.listBusiness')}</Text>
-          <Text style={styles.addListingSubtitle}>Submit your business to iListGTA</Text>
+          <Text style={styles.addListingTitle}>{t('profile.addListing')}</Text>
+          <Text style={styles.addListingSubtitle}>{t('profile.addListingSubtitle')}</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
       </TouchableOpacity>
