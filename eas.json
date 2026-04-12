@@ -11,7 +11,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.vercel.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.iokode.com"
       }
     },
     "preview": {
@@ -23,7 +23,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.vercel.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.iokode.com"
       }
     },
     "production": {
@@ -32,7 +32,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.vercel.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://ilistgta.iokode.com"
       }
     }
   },

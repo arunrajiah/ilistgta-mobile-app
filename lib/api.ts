@@ -349,3 +349,15 @@ export async function getBlogPost(slug: string) {
 export async function submitContact(data: { name: string; email: string; subject?: string; message: string }) {
   return request('/api/contact', { method: 'POST', body: JSON.stringify(data) });
 }
+
+// ── Newsletter ────────────────────────────────────────────────────────────────
+export async function submitNewsletter(email: string) {
+  return request('/api/newsletter', { method: 'POST', body: JSON.stringify({ email }) });
+}
+
+// ── Cities ────────────────────────────────────────────────────────────────────
+export async function getCities(limit = 8) {
+  return request<{ cities: Array<{ id: string; name: string; slug: string; image_url?: string; count?: number }> }>(
+    `/api/public/cities?limit=${limit}`
+  );
+}

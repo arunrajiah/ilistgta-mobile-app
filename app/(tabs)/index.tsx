@@ -1,19 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  FlatList, RefreshControl, ActivityIndicator, TextInput, Alert,
+  RefreshControl, ActivityIndicator, TextInput, Alert, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, Radius, Shadow } from '@/constants/theme';
-import { getCategories, getListings, getEvents, getCoupons, getBanners } from '@/lib/api';
+import { getCategories, getListings, getEvents, getCoupons, getBanners, getCities, submitNewsletter } from '@/lib/api';
 import { Category, Listing, Event, Coupon, Banner } from '@/lib/types';
 import ListingCard from '@/components/ListingCard';
 import EventCard from '@/components/EventCard';
 import CouponCard from '@/components/CouponCard';
 import SearchBar from '@/components/SearchBar';
 import BannerCard from '@/components/BannerCard';
+
+type City = { id: string; name: string; slug: string; image_url?: string; count?: number };
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function HomeScreen() {
   const [events, setEvents] = useState<Event[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -33,13 +36,13 @@ export default function HomeScreen() {
   async function fetchAll() {
     setError('');
     try {
-      // Use allSettled so one failing endpoint doesn't block the rest
-      const [catsResult, listResult, eventResult, couponResult, bannerResult] = await Promise.allSettled([
+      const [catsResult, listResult, eventResult, couponResult, bannerResult, citiesResult] = await Promise.allSettled([
         getCategories('business'),
         getListings({ limit: 8 }),
         getEvents({ limit: 6 }),
         getCoupons({ limit: 6 }),
         getBanners({ page: 'home', limit: 5 }),
+        getCities(8),
       ]);
 
       if (catsResult.status === 'fulfilled')   setCategories(catsResult.value);
@@ -47,8 +50,8 @@ export default function HomeScreen() {
       if (eventResult.status === 'fulfilled')  setEvents(eventResult.value.events);
       if (couponResult.status === 'fulfilled') setCoupons(couponResult.value.coupons);
       if (bannerResult.status === 'fulfilled') setBanners(bannerResult.value.banners ?? []);
+      if (citiesResult.status === 'fulfilled') setCities(citiesResult.value.cities ?? []);
 
-      // Only show error if ALL content requests failed
       const allFailed = [catsResult, listResult, eventResult, couponResult].every(r => r.status === 'rejected');
       if (allFailed) {
         const firstErr = (catsResult as PromiseRejectedResult).reason;
@@ -75,12 +78,7 @@ export default function HomeScreen() {
     }
     setSubscribing(true);
     try {
-      const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
-      await fetch(`${BASE_URL}/api/newsletter`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newsletterEmail.trim() }),
-      });
+      await submitNewsletter(newsletterEmail.trim());
       setSubscribed(true);
     } catch {
       Alert.alert('Error', 'Failed to subscribe. Please try again.');
@@ -104,21 +102,16 @@ export default function HomeScreen() {
         </View>
       </LinearGradient>
 
-      {/* Loading indicator (inline, below hero so hero is always visible) */}
       {loading && (
         <View style={styles.inlineLoader}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       )}
 
-      {/* Connection error (inline, retryable) */}
       {!loading && error ? (
         <View style={styles.inlineError}>
           <Text style={styles.inlineErrorText}>{error}</Text>
-          <TouchableOpacity
-            onPress={() => { setLoading(true); fetchAll(); }}
-            style={styles.retryBtn}
-          >
+          <TouchableOpacity onPress={() => { setLoading(true); fetchAll(); }} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -127,117 +120,163 @@ export default function HomeScreen() {
       {/* Banners */}
       {!loading && banners.length > 0 && <BannerCard banners={banners} />}
 
-      {/* Categories */}
       {!loading && (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Browse by Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-          {categories.map(cat => (
-            <TouchableOpacity
-              key={cat.id}
-              style={styles.categoryChip}
-              onPress={() => router.push({ pathname: '/(tabs)/explore', params: { category: cat.slug } })}
-              activeOpacity={0.75}
-            >
-              <Text style={styles.categoryIcon}>{cat.icon}</Text>
-              <Text style={styles.categoryName}>{cat.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Featured Listings */}
-      {listings.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Businesses</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
-              <Text style={styles.seeAll}>See all →</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {listings.map(listing => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                horizontal
-                onPress={() => router.push(`/business/${listing.slug}`)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Upcoming Events */}
-      {events.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Events</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/events')}>
-              <Text style={styles.seeAll}>See all →</Text>
-            </TouchableOpacity>
-          </View>
-          {events.slice(0, 3).map(event => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onPress={() => router.push(`/event/${event.slug}`)}
-            />
-          ))}
-        </View>
-      )}
-
-      {/* Latest Deals */}
-      {coupons.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Latest Deals</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/coupons')}>
-              <Text style={styles.seeAll}>See all →</Text>
-            </TouchableOpacity>
-          </View>
-          {coupons.slice(0, 3).map(coupon => (
-            <CouponCard key={coupon.id} coupon={coupon} />
-          ))}
-        </View>
-      )}
-
-      {/* Newsletter */}
-      <View style={styles.section}>
-        <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.newsletter}>
-          <Text style={styles.newsletterTitle}>Stay in the Loop</Text>
-          <Text style={styles.newsletterSub}>Get the latest GTA business news & deals</Text>
-          {subscribed ? (
-            <View style={styles.subscribedRow}>
-              <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={styles.subscribedText}>You're subscribed!</Text>
-            </View>
-          ) : (
-            <View style={styles.newsletterRow}>
-              <TextInput
-                style={styles.newsletterInput}
-                placeholder="Your email address"
-                placeholderTextColor="rgba(255,255,255,0.65)"
-                value={newsletterEmail}
-                onChangeText={setNewsletterEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+        <>
+          {/* Categories */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Browse by Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {categories.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={styles.categoryChip}
+                  onPress={() => router.push({ pathname: '/(tabs)/explore', params: { category: cat.slug } })}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text style={styles.categoryName}>{cat.name}</Text>
+                </TouchableOpacity>
+              ))}
               <TouchableOpacity
-                style={styles.subscribeBtn}
-                onPress={handleSubscribe}
-                disabled={subscribing}
-                activeOpacity={0.85}
+                style={[styles.categoryChip, styles.categoryChipMore]}
+                onPress={() => router.push('/(tabs)/explore')}
+                activeOpacity={0.75}
               >
-                {subscribing
-                  ? <ActivityIndicator color={Colors.primary} size="small" />
-                  : <Text style={styles.subscribeBtnText}>Subscribe</Text>
-                }
+                <Text style={[styles.categoryIcon, { color: Colors.primary }]}>→</Text>
+                <Text style={[styles.categoryName, { color: Colors.primary, fontWeight: '700' }]}>More</Text>
               </TouchableOpacity>
+            </ScrollView>
+          </View>
+
+          {/* Featured Businesses */}
+          {listings.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Featured Businesses</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
+                  <Text style={styles.seeAll}>See all →</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {listings.map(listing => (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    horizontal
+                    onPress={() => router.push(`/business/${listing.slug}`)}
+                  />
+                ))}
+              </ScrollView>
             </View>
           )}
-        </LinearGradient>
-      </View>
+
+          {/* Browse by City */}
+          {cities.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Browse by City</Text>
+                <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/explore' })}>
+                  <Text style={styles.seeAll}>See all →</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cityScroll}>
+                {cities.map(city => (
+                  <TouchableOpacity
+                    key={city.id}
+                    style={styles.cityCard}
+                    onPress={() => router.push({ pathname: '/(tabs)/explore', params: { city: city.name } })}
+                    activeOpacity={0.8}
+                  >
+                    {city.image_url ? (
+                      <Image source={{ uri: city.image_url }} style={styles.cityImage} resizeMode="cover" />
+                    ) : (
+                      <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.cityImage}>
+                        <Text style={styles.cityInitial}>{city.name.charAt(0)}</Text>
+                      </LinearGradient>
+                    )}
+                    <View style={styles.cityInfo}>
+                      <Text style={styles.cityName} numberOfLines={1}>{city.name}</Text>
+                      {city.count != null && city.count > 0 && (
+                        <Text style={styles.cityCount}>{city.count} businesses</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Upcoming Events */}
+          {events.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/events')}>
+                  <Text style={styles.seeAll}>See all →</Text>
+                </TouchableOpacity>
+              </View>
+              {events.slice(0, 3).map(event => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onPress={() => router.push(`/event/${event.slug}`)}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Latest Deals */}
+          {coupons.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Hot Deals & Coupons</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/coupons')}>
+                  <Text style={styles.seeAll}>See all →</Text>
+                </TouchableOpacity>
+              </View>
+              {coupons.slice(0, 3).map(coupon => (
+                <CouponCard key={coupon.id} coupon={coupon} />
+              ))}
+            </View>
+          )}
+
+          {/* Newsletter */}
+          <View style={styles.section}>
+            <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.newsletter}>
+              <Text style={styles.newsletterTitle}>Stay in the Loop</Text>
+              <Text style={styles.newsletterSub}>Get the latest GTA business news & deals</Text>
+              {subscribed ? (
+                <View style={styles.subscribedRow}>
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.subscribedText}>You're subscribed!</Text>
+                </View>
+              ) : (
+                <View style={styles.newsletterRow}>
+                  <TextInput
+                    style={styles.newsletterInput}
+                    placeholder="Your email address"
+                    placeholderTextColor="rgba(255,255,255,0.65)"
+                    value={newsletterEmail}
+                    onChangeText={setNewsletterEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    style={styles.subscribeBtn}
+                    onPress={handleSubscribe}
+                    disabled={subscribing}
+                    activeOpacity={0.85}
+                  >
+                    {subscribing
+                      ? <ActivityIndicator color={Colors.primary} size="small" />
+                      : <Text style={styles.subscribeBtnText}>Subscribe</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
+              )}
+            </LinearGradient>
+          </View>
+        </>
       )}
 
       <View style={{ height: Spacing.xxl }} />
@@ -267,11 +306,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     ...Shadow.sm, minWidth: 80,
   },
+  categoryChipMore: {
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryBg,
+  },
   categoryIcon: { fontSize: 24, marginBottom: 4 },
   categoryName: { fontSize: FontSize.xs, fontWeight: '600', color: Colors.text, textAlign: 'center' },
-  newsletter: {
-    borderRadius: Radius.lg, padding: Spacing.lg, gap: Spacing.sm, marginBottom: Spacing.sm,
+  // Cities
+  cityScroll: { marginTop: Spacing.sm },
+  cityCard: {
+    width: 120, marginRight: Spacing.sm, borderRadius: Radius.lg,
+    backgroundColor: Colors.surface, overflow: 'hidden', ...Shadow.sm,
   },
+  cityImage: {
+    width: 120, height: 80,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cityInitial: { fontSize: 32, fontWeight: '800', color: '#fff' },
+  cityInfo: { padding: Spacing.sm },
+  cityName: { fontSize: FontSize.sm, fontWeight: '700', color: Colors.text },
+  cityCount: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },
+  newsletter: { borderRadius: Radius.lg, padding: Spacing.lg, gap: Spacing.sm, marginBottom: Spacing.sm },
   newsletterTitle: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
   newsletterSub: { color: 'rgba(255,255,255,0.85)', fontSize: FontSize.sm, marginBottom: Spacing.sm },
   newsletterRow: { flexDirection: 'row', gap: Spacing.sm },

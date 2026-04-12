@@ -139,12 +139,11 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     alignSelf: 'flex-start',
-    borderWidth: 1.5,
-    borderColor: '#fff',
-    borderRadius: Radius.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 5,
-    marginTop: 4,
+    paddingVertical: 7,
+    marginTop: 6,
   },
   ctaText: {
     color: '#fff',

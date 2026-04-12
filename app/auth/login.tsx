@@ -63,6 +63,10 @@ export default function LoginScreen() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/auth/forgot-password')}>
+            <Text style={styles.linkText}>Forgot password? <Text style={styles.link}>Reset it</Text></Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/auth/register')}>
             <Text style={styles.linkText}>Don't have an account? <Text style={styles.link}>Create one</Text></Text>
           </TouchableOpacity>
