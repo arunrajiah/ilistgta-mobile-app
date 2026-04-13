@@ -1,6 +1,6 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import React from 'react';
 
 const LANG_KEY = 'ilistgta-lang';
 
@@ -35,7 +35,7 @@ export const translations = {
       subscribe: 'Subscribe',
       subscribed: "You're subscribed!",
       subscribing: 'Subscribing...',
-      subscribedMsg: 'Thanks for subscribing! We\'ll send you the best GTA deals.',
+      subscribedMsg: "Thanks for subscribing! We'll send you the best GTA deals.",
       more: 'More',
       noData: 'No data available',
       loading: 'Loading...',
@@ -336,7 +336,6 @@ export type Lang = 'en' | 'ta';
 export type TranslationKeys = typeof translations.en;
 
 // ── Language Context ──────────────────────────────────────────────────────────
-import type { ReactNode } from 'react';
 
 interface LangContextType {
   lang: Lang;
