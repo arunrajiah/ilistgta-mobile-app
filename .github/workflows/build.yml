@@ -1,18 +1,28 @@
 name: EAS Build & Submit
 
+# Trigger strategy:
+#   develop / release/* push  → preview build (internal testing)
+#   v* tag push               → production build + store submission
+#   PR to main                → preview build (no submission)
+#   workflow_dispatch         → manual with profile + submit options
+#
+# Push to main does NOT trigger this workflow — use a version tag (v1.0.0)
+# to cut a production release. This prevents accidental store submissions
+# and avoids failing builds when EAS is not yet configured.
 on:
   push:
     branches:
-      - main        # production build + submit to stores
-      - develop     # preview build only
-      - 'release/*' # preview build only
+      - develop
+      - 'release/*'
+    tags:
+      - 'v*'
   pull_request:
     branches:
-      - main        # preview build on PR (no submit)
+      - main
   workflow_dispatch:
     inputs:
       profile:
-        description: 'Build profile to use'
+        description: 'Build profile'
         required: true
         default: 'preview'
         type: choice
@@ -21,22 +31,35 @@ on:
           - preview
           - production
       submit:
-        description: 'Submit to app stores after build?'
+        description: 'Submit to stores after build?'
         required: false
         default: false
         type: boolean
 
 jobs:
   # ─────────────────────────────────────────────
-  # Preview build — runs on all branches except main
+  # Preview build — develop, release/* and PRs
   # ─────────────────────────────────────────────
   preview-build:
     name: Preview Build (Internal Testing)
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && (
+        startsWith(github.ref, 'refs/heads/develop') ||
+        startsWith(github.ref, 'refs/heads/release/')
+      ))
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Check EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set."
+            echo "Add it under: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -64,15 +87,29 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
   # ─────────────────────────────────────────────
-  # Production build + store submission — main only
+  # Production build + store submission — version tags only
   # ─────────────────────────────────────────────
   production-build-and-submit:
     name: Production Build & Submit
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Check required secrets
+        run: |
+          missing=()
+          [ -z "${{ secrets.EXPO_TOKEN }}" ]              && missing+=("EXPO_TOKEN")
+          [ -z "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" ] && missing+=("GOOGLE_SERVICE_ACCOUNT_KEY")
+          [ -z "${{ secrets.ASC_API_KEY }}" ]             && missing+=("ASC_API_KEY")
+          [ -z "${{ secrets.ASC_API_KEY_ID }}" ]          && missing+=("ASC_API_KEY_ID")
+          [ -z "${{ secrets.ASC_API_KEY_ISSUER_ID }}" ]   && missing+=("ASC_API_KEY_ISSUER_ID")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Add them under: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -89,23 +126,20 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # Write the Google Play service account key from secret
       - name: Write Google Play service account key
         run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > ./google-service-account.json
 
-      # Write the App Store Connect API key from secret
       - name: Write App Store Connect API key
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          echo '${{ secrets.ASC_API_KEY }}' > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+          echo '${{ secrets.ASC_API_KEY }}' > \
+            ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
 
-      # Build Android AAB for Play Store
       - name: Build Android (production)
         run: eas build --platform android --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      # Build iOS IPA for App Store
       - name: Build iOS (production)
         run: eas build --platform ios --profile production --non-interactive
         env:
@@ -113,13 +147,11 @@ jobs:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
 
-      # Submit Android to Play Store (internal track)
       - name: Submit Android to Play Store
         run: eas submit --platform android --profile production --non-interactive --latest
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      # Submit iOS to App Store Connect (TestFlight)
       - name: Submit iOS to App Store Connect
         run: eas submit --platform ios --profile production --non-interactive --latest
         env:
@@ -127,15 +159,14 @@ jobs:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
 
-      # Clean up sensitive key files
       - name: Cleanup credential files
         if: always()
         run: |
           rm -f ./google-service-account.json
-          rm -f ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+          rm -f ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8 2>/dev/null || true
 
   # ─────────────────────────────────────────────
-  # Manual dispatch — build (and optionally submit)
+  # Manual dispatch
   # ─────────────────────────────────────────────
   manual-build:
     name: Manual Build (${{ github.event.inputs.profile }})
@@ -145,6 +176,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set."
+            echo "Add it under: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -168,7 +207,8 @@ jobs:
         if: github.event.inputs.submit == 'true'
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          echo '${{ secrets.ASC_API_KEY }}' > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+          echo '${{ secrets.ASC_API_KEY }}' > \
+            ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
 
       - name: Build both platforms
         run: eas build --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
