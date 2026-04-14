@@ -1,9 +1,9 @@
-name: Build Android APK
+name: Build Android APK (Direct / Manual)
 
+# Manual-only trigger — use this for quick local-style Gradle builds
+# without consuming EAS build credits. Automated builds on push use
+# build.yml (EAS) instead to avoid running two competing pipelines.
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
   workflow_dispatch:
     inputs:
       build_type:
@@ -17,7 +17,7 @@ on:
 
 jobs:
   build-apk:
-    name: Build Android APK
+    name: Build Android APK (${{ github.event.inputs.build_type }})
     runs-on: ubuntu-latest
 
     steps:
@@ -72,23 +72,14 @@ jobs:
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
 
-      # Determine build type: release on tags or explicit input, debug otherwise
-      - name: Determine build variant
-        id: variant
-        run: |
-          if [[ "${{ github.event.inputs.build_type }}" == "release" || "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "type=release" >> $GITHUB_OUTPUT
-            echo "task=assembleRelease" >> $GITHUB_OUTPUT
-            echo "apk_dir=release" >> $GITHUB_OUTPUT
-          else
-            echo "type=debug" >> $GITHUB_OUTPUT
-            echo "task=assembleDebug" >> $GITHUB_OUTPUT
-            echo "apk_dir=debug" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build APK (${{ steps.variant.outputs.type }})
+      - name: Build APK (${{ github.event.inputs.build_type }})
         working-directory: android
-        run: ./gradlew ${{ steps.variant.outputs.task }} --no-daemon
+        run: |
+          if [[ "${{ github.event.inputs.build_type }}" == "release" ]]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            ./gradlew assembleDebug --no-daemon
+          fi
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
@@ -103,28 +94,17 @@ jobs:
       - name: Locate & rename APK
         id: apk
         run: |
-          APK_PATH=$(find android/app/build/outputs/apk/${{ steps.variant.outputs.apk_dir }} -name "*.apk" | head -1)
+          APK_DIR="${{ github.event.inputs.build_type }}"
+          APK_PATH=$(find android/app/build/outputs/apk/${APK_DIR} -name "*.apk" | head -1)
           TIMESTAMP=$(date +%Y%m%d%H%M)
-          APK_NAME="ilistgta-v${{ steps.app_version.outputs.version }}-${{ steps.variant.outputs.type }}-${TIMESTAMP}.apk"
+          APK_NAME="ilistgta-v${{ steps.app_version.outputs.version }}-${APK_DIR}-${TIMESTAMP}.apk"
           cp "$APK_PATH" "$APK_NAME"
           echo "path=$APK_NAME" >> $GITHUB_OUTPUT
           echo "name=$APK_NAME" >> $GITHUB_OUTPUT
 
-      # Always upload APK as a downloadable Actions artifact (30-day retention)
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ilistgta-apk-v${{ steps.app_version.outputs.version }}-${{ steps.variant.outputs.type }}
+          name: ilistgta-apk-v${{ steps.app_version.outputs.version }}-${{ github.event.inputs.build_type }}
           path: ${{ steps.apk.outputs.path }}
           retention-days: 30
-
-      # On version tags (v1.0.0 etc.), create a GitHub Release and attach the APK
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: iListGTA ${{ github.ref_name }}
-          files: ${{ steps.apk.outputs.path }}
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
