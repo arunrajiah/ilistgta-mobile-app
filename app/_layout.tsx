@@ -7,6 +7,7 @@ import { AuthProvider } from '@/lib/auth';
 import { Colors } from '@/constants/theme';
 import { AppConfigContext, fetchAppConfig, DEFAULT_CONFIG } from '@/lib/appConfig';
 import type { AppConfig } from '@/lib/appConfig';
+import { setApiBaseUrl } from '@/lib/api';
 import { LangProvider } from '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync();
@@ -25,6 +26,8 @@ export default function RootLayout() {
 
     fetchAppConfig().then(cfg => {
       clearTimeout(safetyTimer);
+      // If the admin has set a custom API base URL, apply it for all subsequent API calls.
+      if (cfg.apiBaseUrl) setApiBaseUrl(cfg.apiBaseUrl);
       setAppConfig(cfg);
       setReady(true);
       SplashScreen.hideAsync();

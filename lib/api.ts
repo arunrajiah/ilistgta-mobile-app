@@ -1,9 +1,22 @@
 import { AnalyticsEnquiry, AnalyticsLog, Banner, BlogPost, Category, Coupon, Event, Listing, Pagination, Review, UserProfile, VendorCoupon, VendorEvent, VendorProfile } from './types';
 
-const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
+let BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 
 if (!BASE_URL) {
   console.warn('[api] EXPO_PUBLIC_API_BASE_URL is not set. API calls will fail.');
+}
+
+/**
+ * Override the API base URL at runtime.
+ * Called from app/_layout.tsx after remote config is fetched,
+ * allowing the admin to push a URL change without a new app build.
+ */
+export function setApiBaseUrl(url: string) {
+  const cleaned = url.replace(/\/$/, '');
+  if (cleaned && cleaned !== BASE_URL) {
+    console.log(`[api] Base URL updated → ${cleaned}`);
+    BASE_URL = cleaned;
+  }
 }
 
 const REQUEST_TIMEOUT_MS = 15_000; // 15 seconds — prevents indefinite hangs on mobile
