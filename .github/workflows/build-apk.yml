@@ -1,9 +1,12 @@
 name: Build Android APK (Direct / Manual)
 
-# Manual-only trigger — use this for quick local-style Gradle builds
-# without consuming EAS build credits. Automated builds on push use
-# build.yml (EAS) instead to avoid running two competing pipelines.
+# Triggers:
+#   • Every push to main  → debug APK (no EAS credits needed)
+#   • workflow_dispatch   → choose debug or release manually from the Actions tab
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       build_type:
@@ -17,7 +20,7 @@ on:
 
 jobs:
   build-apk:
-    name: Build Android APK (${{ github.event.inputs.build_type }})
+    name: Build Android APK (${{ github.event.inputs.build_type || 'debug' }})
     runs-on: ubuntu-latest
 
     steps:
@@ -50,17 +53,20 @@ jobs:
       # Write .env file from GitHub Secrets so EXPO_PUBLIC_* vars are baked into the JS bundle
       - name: Create .env from secrets
         run: |
-          cat > .env << 'EOF'
+          cat > .env << 'ENVEOF'
           EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_BASE_URL=${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
-          EOF
-          # Strip leading whitespace
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          ENVEOF
+          # Strip leading whitespace added by heredoc indentation
           sed -i 's/^ *//' .env
-          echo ".env written:"
-          cat .env
+          echo ".env written (keys redacted):"
+          sed 's/=.*/=***/' .env
 
-      # Expo prebuild generates the native android/ folder from your JS project
+      # Expo prebuild generates the native android/ folder from the JS project.
+      # app.config.js reads EXPO_PUBLIC_GOOGLE_MAPS_API_KEY and injects it into
+      # AndroidManifest.xml as the com.google.android.geo.API_KEY meta-data entry.
       - name: Generate native Android project (expo prebuild)
         run: npx expo prebuild --platform android --no-install
         env:
@@ -68,14 +74,16 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
 
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build APK (${{ github.event.inputs.build_type }})
+      - name: Build APK (${{ github.event.inputs.build_type || 'debug' }})
         working-directory: android
         run: |
-          if [[ "${{ github.event.inputs.build_type }}" == "release" ]]; then
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+          if [[ "$BUILD_TYPE" == "release" ]]; then
             ./gradlew assembleRelease --no-daemon
           else
             ./gradlew assembleDebug --no-daemon
@@ -86,6 +94,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
 
       - name: Get app version
         id: app_version
@@ -94,10 +103,10 @@ jobs:
       - name: Locate & rename APK
         id: apk
         run: |
-          APK_DIR="${{ github.event.inputs.build_type }}"
-          APK_PATH=$(find android/app/build/outputs/apk/${APK_DIR} -name "*.apk" | head -1)
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+          APK_PATH=$(find android/app/build/outputs/apk/${BUILD_TYPE} -name "*.apk" | head -1)
           TIMESTAMP=$(date +%Y%m%d%H%M)
-          APK_NAME="ilistgta-v${{ steps.app_version.outputs.version }}-${APK_DIR}-${TIMESTAMP}.apk"
+          APK_NAME="ilistgta-v${{ steps.app_version.outputs.version }}-${BUILD_TYPE}-${TIMESTAMP}.apk"
           cp "$APK_PATH" "$APK_NAME"
           echo "path=$APK_NAME" >> $GITHUB_OUTPUT
           echo "name=$APK_NAME" >> $GITHUB_OUTPUT
@@ -105,6 +114,6 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ilistgta-apk-v${{ steps.app_version.outputs.version }}-${{ github.event.inputs.build_type }}
+          name: ilistgta-apk-v${{ steps.app_version.outputs.version }}-${{ github.event.inputs.build_type || 'debug' }}
           path: ${{ steps.apk.outputs.path }}
           retention-days: 30
