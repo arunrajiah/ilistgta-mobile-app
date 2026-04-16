@@ -10,7 +10,10 @@ import type { AppConfig } from '@/lib/appConfig';
 import { setApiBaseUrl } from '@/lib/api';
 import { LangProvider } from '@/lib/i18n';
 
-SplashScreen.preventAutoHideAsync();
+// Wrap in try/catch — SplashScreen is a no-op on web but may log a warning
+try { SplashScreen.preventAutoHideAsync(); } catch {}
+
+const hideSplash = () => { try { SplashScreen.hideAsync(); } catch {} };
 
 export default function RootLayout() {
   const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG);
@@ -21,17 +24,25 @@ export default function RootLayout() {
     // A 3-second safety timeout ensures splash always hides even if the fetch hangs.
     const safetyTimer = setTimeout(() => {
       setReady(true);
-      SplashScreen.hideAsync();
+      hideSplash();
     }, 3000);
 
-    fetchAppConfig().then(cfg => {
-      clearTimeout(safetyTimer);
-      // If the admin has set a custom API base URL, apply it for all subsequent API calls.
-      if (cfg.apiBaseUrl) setApiBaseUrl(cfg.apiBaseUrl);
-      setAppConfig(cfg);
-      setReady(true);
-      SplashScreen.hideAsync();
-    });
+    fetchAppConfig()
+      .then(cfg => {
+        clearTimeout(safetyTimer);
+        // If the admin has set a custom API base URL, apply it for all subsequent API calls.
+        if (cfg.apiBaseUrl) setApiBaseUrl(cfg.apiBaseUrl);
+        setAppConfig(cfg);
+        setReady(true);
+        hideSplash();
+      })
+      .catch(() => {
+        // fetchAppConfig catches errors internally and returns DEFAULT_CONFIG,
+        // but guard here too so a stray rejection never blocks the splash hide.
+        clearTimeout(safetyTimer);
+        setReady(true);
+        hideSplash();
+      });
 
     return () => clearTimeout(safetyTimer);
   }, []);

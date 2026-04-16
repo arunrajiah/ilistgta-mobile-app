@@ -150,6 +150,12 @@ export default function MyCouponsScreen() {
           <Text style={{ fontSize: FontSize.base, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
             Please sign in to view your coupons.
           </Text>
+          <TouchableOpacity
+            style={{ marginTop: 20, backgroundColor: Colors.primary, paddingHorizontal: 32, paddingVertical: 12, borderRadius: 24 }}
+            onPress={() => router.push('/auth/login' as Href)}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: FontSize.base }}>Sign In</Text>
+          </TouchableOpacity>
         </View>
       ) : loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={Colors.primary} /></View>

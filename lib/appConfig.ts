@@ -100,11 +100,18 @@ function mergeConfig(remote: Record<string, any>): AppConfig {
 }
 
 export async function fetchAppConfig(): Promise<AppConfig> {
+  // On web/browser, the config endpoint is on a different origin — skip the
+  // fetch entirely to avoid a CORS error in the dev overlay. The app works
+  // fine with DEFAULT_CONFIG while running via `expo start --web`.
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' &&
+      window.location?.hostname === 'localhost') {
+    return DEFAULT_CONFIG;
+  }
   try {
-    const res = await fetch(`${BASE_URL}/api/mobile/config`, {
-      // Short timeout: we don't want config fetch to delay app startup
-      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined,
-    });
+    const signal = typeof AbortSignal?.timeout === 'function'
+      ? AbortSignal.timeout(5000)
+      : undefined;
+    const res = await fetch(`${BASE_URL}/api/mobile/config`, { signal });
     if (!res.ok) return DEFAULT_CONFIG;
     const body = await res.json();
     const remote = body?.config;

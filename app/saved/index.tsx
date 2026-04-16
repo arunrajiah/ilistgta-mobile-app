@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, RefreshControl, Image, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth';
@@ -166,6 +167,12 @@ export default function SavedScreen() {
           <Text style={{ fontSize: FontSize.base, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
             Please sign in to view your saved businesses.
           </Text>
+          <TouchableOpacity
+            style={{ marginTop: 20, backgroundColor: Colors.primary, paddingHorizontal: 32, paddingVertical: 12, borderRadius: 24 }}
+            onPress={() => router.push('/auth/login' as Href)}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: FontSize.base }}>Sign In</Text>
+          </TouchableOpacity>
         </View>
       ) : loading ? (
         <View style={styles.center}>
