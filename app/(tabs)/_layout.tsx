@@ -4,9 +4,12 @@ import { Colors, FontSize } from '@/constants/theme';
 import { useAppConfig } from '@/lib/appConfig';
 import { useLang } from '@/lib/i18n';
 
+const BUILT_IN_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+
 export default function TabsLayout() {
   const config = useAppConfig();
   const { t } = useLang();
+  const mapConfigured = !!(BUILT_IN_MAPS_KEY || config.apiKeys?.googleMaps);
 
   return (
     <Tabs
@@ -57,7 +60,7 @@ export default function TabsLayout() {
         name="map"
         options={{
           title: t('tabs.map'),
-          href: config.features.map ? undefined : null,
+          href: (config.features.map && mapConfigured) ? undefined : null,
           tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} />,
         }}
       />

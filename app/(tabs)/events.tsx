@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,14 +9,18 @@ import { getCategories, getEvents } from '@/lib/api';
 import { Category, Event } from '@/lib/types';
 import { Colors, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
 import EventCard from '@/components/EventCard';
+import { useLang } from '@/lib/i18n';
 
 const PAGE_SIZE = 12;
+const GTA_CITIES = ['All Cities', 'Toronto', 'Mississauga', 'Brampton', 'Markham', 'Vaughan', 'Richmond Hill', 'Oakville', 'Burlington', 'Ajax', 'Pickering'];
 
 export default function EventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useLang();
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState('');
+  const [activeCity, setActiveCity] = useState('All Cities');
   const [events, setEvents] = useState<Event[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,7 +37,8 @@ export default function EventsScreen() {
     if (reset) setError('');
     try {
       if (reset) setLoading(true); else if (pg > 1) setLoadingMore(true);
-      const data = await getEvents({ category: activeCategory, page: pg, limit: PAGE_SIZE });
+      const city = activeCity !== 'All Cities' ? activeCity : undefined;
+      const data = await getEvents({ category: activeCategory, city, page: pg, limit: PAGE_SIZE });
       setEvents(prev => reset ? data.events : [...prev, ...data.events]);
       setTotalPages(data.pagination.pages);
       setPage(pg);
@@ -46,21 +51,21 @@ export default function EventsScreen() {
     }
   }
 
-  useEffect(() => { fetchEvents(1, true); }, [activeCategory]);
+  useEffect(() => { fetchEvents(1, true); }, [activeCategory, activeCity]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); fetchEvents(1, true); }, [activeCategory]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Events</Text>
-        <Text style={styles.headerSub}>What's happening in the GTA</Text>
+        <Text style={styles.headerTitle}>{t('events.title')}</Text>
+        <Text style={styles.headerSub}>{t('events.subtitle')}</Text>
       </View>
 
       {/* Category filter */}
       <FlatList
         horizontal
-        data={[{ id: '', name: 'All Events', slug: '', icon: '🎉', type: 'event' as const }, ...categories]}
+        data={[{ id: '', name: t('events.allEvents'), slug: '', icon: '🎉', type: 'event' as const }, ...categories]}
         keyExtractor={c => c.id || 'all'}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterList}
@@ -73,6 +78,24 @@ export default function EventsScreen() {
             <Text style={[styles.chipText, activeCategory === item.slug && styles.chipTextActive]}>
               {item.icon} {item.name}
             </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* City filter */}
+      <FlatList
+        horizontal
+        data={GTA_CITIES}
+        keyExtractor={c => c}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterList}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.chip, activeCity === item && styles.chipActive]}
+            onPress={() => setActiveCity(item)}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.chipText, activeCity === item && styles.chipTextActive]}>{item}</Text>
           </TouchableOpacity>
         )}
       />

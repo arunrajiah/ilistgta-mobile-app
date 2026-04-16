@@ -41,7 +41,11 @@ export default function AnalyticsScreen() {
   const [listingStats, setListingStats] = useState<ListingStats[]>([]);
 
   const load = useCallback(async (selectedDays = days) => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     setError('');
     try {
       const [analyticsRes, listingsRes] = await Promise.all([
@@ -72,7 +76,8 @@ export default function AnalyticsScreen() {
         name: l.name,
         slug: l.slug,
         avg_rating: Number(l.avg_rating) || 0,
-        views: viewsByPage[`/businesses/${l.slug}`] || 0,
+        // Count both /business/ (mobile) and /businesses/ (legacy web) paths (B5 fix)
+        views: (viewsByPage[`/business/${l.slug}`] || 0) + (viewsByPage[`/businesses/${l.slug}`] || 0),
         enquiries: enquiriesByListing[l.id] || 0,
       })).sort((a, b) => b.views - a.views);
 
@@ -88,6 +93,17 @@ export default function AnalyticsScreen() {
   useEffect(() => { setLoading(true); load(days); }, [days]);
 
   const onRefresh = () => { setRefreshing(true); load(days); };
+
+  if (!session?.access_token && !loading) {
+    return (
+      <View style={[styles.loader, { paddingTop: insets.top }]}>
+        <Ionicons name="lock-closed-outline" size={48} color={Colors.border} />
+        <Text style={{ fontSize: FontSize.base, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
+          Please sign in to view your analytics.
+        </Text>
+      </View>
+    );
+  }
 
   if (loading) {
     return (

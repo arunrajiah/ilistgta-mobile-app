@@ -205,14 +205,16 @@ export default function BusinessDetailScreen() {
             </View>
           </View>
 
-          {/* Rating */}
-          <View style={styles.ratingRow}>
-            {[1,2,3,4,5].map(s => (
-              <Ionicons key={s} name={s <= Math.round(listing.avg_rating) ? 'star' : 'star-outline'} size={18} color={Colors.star} />
-            ))}
-            <Text style={styles.ratingNum}>{avgRating}</Text>
-            <Text style={styles.ratingCount}>({listing.review_count} reviews)</Text>
-          </View>
+          {/* Rating — only shown when reviews exist */}
+          {listing.review_count > 0 && (
+            <View style={styles.ratingRow}>
+              {[1,2,3,4,5].map(s => (
+                <Ionicons key={s} name={s <= Math.round(listing.avg_rating) ? 'star' : 'star-outline'} size={18} color={Colors.star} />
+              ))}
+              <Text style={styles.ratingNum}>{avgRating}</Text>
+              <Text style={styles.ratingCount}>({listing.review_count} reviews)</Text>
+            </View>
+          )}
 
           {/* Action buttons */}
           <View style={styles.actions}>

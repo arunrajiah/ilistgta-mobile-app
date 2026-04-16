@@ -8,11 +8,13 @@ import { getCoupons } from '@/lib/api';
 import { Coupon } from '@/lib/types';
 import { Colors, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
 import CouponCard from '@/components/CouponCard';
+import { useLang } from '@/lib/i18n';
 
 const PAGE_SIZE = 12;
 
 export default function CouponsScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useLang();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -45,8 +47,8 @@ export default function CouponsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Deals & Coupons</Text>
-        <Text style={styles.headerSub}>Exclusive offers from local businesses</Text>
+        <Text style={styles.headerTitle}>{t('deals.title')}</Text>
+        <Text style={styles.headerSub}>{t('deals.subtitle')}</Text>
       </View>
 
       {loading ? (

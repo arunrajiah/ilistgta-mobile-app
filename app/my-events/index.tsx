@@ -33,7 +33,11 @@ export default function MyEventsScreen() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await getMyEvents(session.access_token);
       setEvents(data.events);
@@ -127,7 +131,14 @@ export default function MyEventsScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {!session?.access_token && !loading ? (
+        <View style={styles.center}>
+          <Ionicons name="lock-closed-outline" size={48} color={Colors.border} />
+          <Text style={{ fontSize: FontSize.base, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
+            Please sign in to view your events.
+          </Text>
+        </View>
+      ) : loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={Colors.primary} /></View>
       ) : (
         <FlatList

@@ -45,8 +45,8 @@ export default function AccountSettingsScreen() {
       Alert.alert('Error', 'Please enter your current password.');
       return;
     }
-    if (!newPassword || newPassword.length < 6) {
-      Alert.alert('Error', 'New password must be at least 6 characters.');
+    if (!newPassword || newPassword.length < 8) {
+      Alert.alert('Error', 'New password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -141,7 +141,7 @@ export default function AccountSettingsScreen() {
               style={styles.input}
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder="Min. 6 characters"
+              placeholder="Min. 8 characters"
               placeholderTextColor={Colors.textMuted}
               secureTextEntry
             />

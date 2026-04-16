@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Clipboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Colors, Radius, Shadow, Spacing, FontSize } from '@/constants/theme';
 import { Coupon } from '@/lib/types';
@@ -16,7 +17,7 @@ export default function CouponCard({ coupon }: Props) {
 
   async function copyCode() {
     if (!coupon.code) return;
-    Clipboard.setString(coupon.code);
+    await Clipboard.setStringAsync(coupon.code);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

@@ -127,6 +127,8 @@ export const translations = {
     // Events
     events: {
       title: 'Events',
+      subtitle: "What's happening in the GTA",
+      allEvents: 'All Events',
       upcoming: 'Upcoming',
       past: 'Past Events',
       noEvents: 'No events found',
@@ -137,7 +139,8 @@ export const translations = {
     },
     // Deals / Coupons
     deals: {
-      title: 'Hot Deals',
+      title: 'Deals & Coupons',
+      subtitle: 'Exclusive offers from local businesses',
       noCoupons: 'No deals available',
       checkBack: 'Check back soon for exclusive deals!',
       expires: 'Expires',
@@ -290,6 +293,8 @@ export const translations = {
     // Events
     events: {
       title: 'நிகழ்வுகள்',
+      subtitle: 'GTA-வில் என்ன நடக்கிறது',
+      allEvents: 'அனைத்து நிகழ்வுகளும்',
       upcoming: 'வரவிருக்கும்',
       past: 'கடந்த நிகழ்வுகள்',
       noEvents: 'நிகழ்வுகள் எதுவும் கிடைக்கவில்லை',
@@ -300,7 +305,8 @@ export const translations = {
     },
     // Deals / Coupons
     deals: {
-      title: 'சிறப்பு சலுகைகள்',
+      title: 'சலுகைகள் & தள்ளுபடிகள்',
+      subtitle: 'உள்ளூர் வணிகங்களிலிருந்து சிறப்பு சலுகைகள்',
       noCoupons: 'சலுகைகள் எதுவும் இல்லை',
       checkBack: 'சிறப்பு சலுகைகளுக்கு விரைவில் மீண்டும் சரிபாருங்கள்!',
       expires: 'காலாவதி',

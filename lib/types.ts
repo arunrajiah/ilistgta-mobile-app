@@ -62,6 +62,7 @@ export interface Event {
   price: number;
   is_online: boolean;
   online_url?: string;
+  ticket_url?: string;
   categories?: Category;
 }
 

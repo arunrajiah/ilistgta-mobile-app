@@ -26,9 +26,13 @@ export default React.memo(function ListingCard({ listing, onPress, horizontal }:
           <Text style={styles.name} numberOfLines={1}>{listing.name}</Text>
           <Text style={styles.address} numberOfLines={1}>📍 {listing.city}</Text>
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={13} color={Colors.star} />
-            <Text style={styles.ratingText}>{Number(listing.avg_rating).toFixed(1)}</Text>
-            <Text style={styles.reviewCount}>({listing.review_count})</Text>
+            {listing.review_count > 0 && (
+              <>
+                <Ionicons name="star" size={13} color={Colors.star} />
+                <Text style={styles.ratingText}>{Number(listing.avg_rating).toFixed(1)}</Text>
+                <Text style={styles.reviewCount}>({listing.review_count})</Text>
+              </>
+            )}
             {listing.is_verified && (
               <View style={styles.verifiedBadge}>
                 <Text style={styles.verifiedText}>✓ Verified</Text>
@@ -58,9 +62,13 @@ export default React.memo(function ListingCard({ listing, onPress, horizontal }:
         <Text style={styles.description} numberOfLines={2}>{listing.short_description}</Text>
         <Text style={styles.address} numberOfLines={1}>📍 {listing.address ?? listing.city}</Text>
         <View style={styles.ratingRow}>
-          <Ionicons name="star" size={13} color={Colors.star} />
-          <Text style={styles.ratingText}>{Number(listing.avg_rating).toFixed(1)}</Text>
-          <Text style={styles.reviewCount}>({listing.review_count} reviews)</Text>
+          {listing.review_count > 0 && (
+            <>
+              <Ionicons name="star" size={13} color={Colors.star} />
+              <Text style={styles.ratingText}>{Number(listing.avg_rating).toFixed(1)}</Text>
+              <Text style={styles.reviewCount}>({listing.review_count} reviews)</Text>
+            </>
+          )}
           {listing.is_verified && (
             <View style={styles.verifiedBadge}>
               <Text style={styles.verifiedText}>✓</Text>

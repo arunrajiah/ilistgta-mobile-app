@@ -74,16 +74,18 @@ export default function ProfileScreen() {
 
   const isVendor = user.app_metadata?.role === 'vendor' || user.user_metadata?.role === 'vendor';
 
-  const menuItems = [
+  type MenuItem = { icon: string; label: string; count?: number; onPress: () => void; section?: string };
+
+  const menuItems: MenuItem[] = [
     { icon: 'bookmark-outline', label: t('profile.savedBusinesses'), count: mySaved, onPress: () => router.push('/saved' as Href) },
     { icon: 'business-outline', label: t('profile.myListings'), count: myListings, onPress: () => router.push('/my-listings' as Href) },
     ...(isVendor ? [
-      { icon: 'storefront-outline', label: t('profile.vendorProfile'), onPress: () => router.push('/vendor-profile' as Href) },
+      { icon: 'storefront-outline', label: t('profile.vendorProfile'), onPress: () => router.push('/vendor-profile' as Href), section: 'Vendor Tools' },
       { icon: 'calendar-outline', label: t('profile.myEvents'), onPress: () => router.push('/my-events' as Href) },
       { icon: 'pricetags-outline', label: t('profile.myCoupons'), onPress: () => router.push('/my-coupons' as Href) },
       { icon: 'bar-chart-outline', label: t('profile.analytics'), onPress: () => router.push('/analytics' as Href) },
     ] : []),
-    { icon: 'mail-outline', label: t('profile.myEnquiries'), onPress: () => router.push('/enquiries' as Href) },
+    { icon: 'mail-outline', label: t('profile.myEnquiries'), onPress: () => router.push('/enquiries' as Href), section: 'Account' },
     { icon: 'settings-outline', label: t('profile.accountSettings'), onPress: () => router.push('/account-settings' as Href) },
     { icon: 'help-circle-outline', label: t('profile.help'), onPress: () => router.push('/help' as Href) },
     { icon: 'information-circle-outline', label: t('profile.about'), onPress: () => router.push('/about' as Href) },
@@ -162,16 +164,23 @@ export default function ProfileScreen() {
       {/* Menu */}
       <View style={styles.menu}>
         {menuItems.map((item, i) => (
-          <TouchableOpacity key={i} style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
-            <Ionicons name={item.icon as any} size={22} color={Colors.primary} />
-            <Text style={styles.menuLabel}>{item.label}</Text>
-            <View style={styles.menuRight}>
-              {item.count !== undefined && (
-                <View style={styles.countBadge}><Text style={styles.countText}>{item.count}</Text></View>
-              )}
-              <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-            </View>
-          </TouchableOpacity>
+          <React.Fragment key={i}>
+            {item.section && (
+              <View style={styles.menuSectionHeader}>
+                <Text style={styles.menuSectionLabel}>{item.section}</Text>
+              </View>
+            )}
+            <TouchableOpacity style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
+              <Ionicons name={item.icon as any} size={22} color={Colors.primary} />
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <View style={styles.menuRight}>
+                {item.count !== undefined && (
+                  <View style={styles.countBadge}><Text style={styles.countText}>{item.count}</Text></View>
+                )}
+                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+          </React.Fragment>
         ))}
       </View>
 
@@ -246,6 +255,11 @@ const styles = StyleSheet.create({
   addListingTitle: { fontSize: FontSize.base, fontWeight: '700', color: Colors.primary },
   addListingSubtitle: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
   menu: { backgroundColor: Colors.surface, marginTop: Spacing.md, marginHorizontal: Spacing.md, borderRadius: Radius.lg, overflow: 'hidden', ...Shadow.sm },
+  menuSectionHeader: {
+    paddingHorizontal: Spacing.md, paddingTop: 14, paddingBottom: 4,
+    borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.surfaceSecondary,
+  },
+  menuSectionLabel: { fontSize: FontSize.xs, fontWeight: '700', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
   menuItem: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md,
     paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight, gap: Spacing.md,

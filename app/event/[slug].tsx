@@ -94,7 +94,13 @@ export default function EventDetailScreen() {
             <Text style={styles.ctaBtnText}>Join Online Event</Text>
           </TouchableOpacity>
         ) : !event.is_free ? (
-          <TouchableOpacity style={styles.ctaBtn}>
+          <TouchableOpacity
+            style={styles.ctaBtn}
+            onPress={() => {
+              if (event.ticket_url) safeOpen(event.ticket_url);
+              else Alert.alert('Tickets', 'Visit the event organiser\'s website to purchase tickets.');
+            }}
+          >
             <Ionicons name="ticket" size={18} color="#fff" />
             <Text style={styles.ctaBtnText}>Get Tickets — ${event.price}</Text>
           </TouchableOpacity>

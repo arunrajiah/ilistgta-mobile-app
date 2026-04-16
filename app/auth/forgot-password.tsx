@@ -23,7 +23,7 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: 'ilistgta://reset-password',
+        redirectTo: 'ilistgta://auth/reset-password',
       });
       if (error) throw error;
       setSent(true);

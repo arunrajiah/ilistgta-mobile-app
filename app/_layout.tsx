@@ -79,6 +79,10 @@ export default function RootLayout() {
             name="auth/forgot-password"
             options={{ headerShown: true, headerTitle: 'Forgot Password', headerTintColor: Colors.primary, presentation: 'modal' }}
           />
+          <Stack.Screen
+            name="auth/reset-password"
+            options={{ headerShown: true, headerTitle: 'Reset Password', headerTintColor: Colors.primary }}
+          />
           <Stack.Screen name="listing/new" options={{ headerShown: false }} />
           <Stack.Screen name="listing/[id]/edit" options={{ headerShown: false }} />
           <Stack.Screen name="my-listings" options={{ headerShown: false }} />

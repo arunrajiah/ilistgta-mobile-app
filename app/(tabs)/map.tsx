@@ -152,8 +152,21 @@ export default function MapScreen() {
 
       {/* Count badge */}
       <View style={[styles.badge, { top: insets.top + 12 }]}>
-        <Text style={styles.badgeText}>{mapped.length} businesses</Text>
+        <Text style={styles.badgeText}>
+          {mapped.length > 0 ? `${mapped.length} businesses` : 'No locations yet'}
+        </Text>
       </View>
+
+      {/* No lat/lng overlay (B4) */}
+      {mapped.length === 0 && (
+        <View style={styles.noLocationsOverlay}>
+          <Text style={styles.emptyIcon}>📍</Text>
+          <Text style={styles.emptyTitle}>No Business Locations Yet</Text>
+          <Text style={styles.emptyMessage}>
+            Business locations will appear on the map once vendors add their addresses.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -209,4 +222,10 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full, ...Shadow.md,
   },
   badgeText: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.text },
+  noLocationsOverlay: {
+    position: 'absolute', bottom: 40, left: 20, right: 20,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: Radius.lg, padding: Spacing.lg,
+    alignItems: 'center', ...Shadow.lg,
+  },
 });

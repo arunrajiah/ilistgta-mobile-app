@@ -26,7 +26,11 @@ export default function EnquiriesScreen() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await getMyEnquiries(session.access_token);
       setEnquiries(data.enquiries);
@@ -96,7 +100,14 @@ export default function EnquiriesScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      {loading ? (
+      {!session?.access_token && !loading ? (
+        <View style={styles.center}>
+          <Ionicons name="lock-closed-outline" size={48} color={Colors.border} />
+          <Text style={{ fontSize: FontSize.base, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
+            Please sign in to view your enquiries.
+          </Text>
+        </View>
+      ) : loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>

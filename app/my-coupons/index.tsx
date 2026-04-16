@@ -36,7 +36,11 @@ export default function MyCouponsScreen() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await getMyCoupons(session.access_token);
       setCoupons(data.coupons);
@@ -75,7 +79,12 @@ export default function MyCouponsScreen() {
     const status = item.status ?? 'draft';
     const statusColor = STATUS_COLORS[status] ?? Colors.textMuted;
     const isDeleting = deletingId === item.id;
-    const isExpired = item.end_date && new Date(item.end_date) < new Date();
+    // Treat end_date as end-of-day local time to avoid timezone off-by-one (M7)
+    const isExpired = item.end_date && (() => {
+      const [y, m, d] = item.end_date.split('T')[0].split('-').map(Number);
+      const endOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
+      return endOfDay < new Date();
+    })();
 
     return (
       <View style={[styles.card, isExpired && { opacity: 0.6 }]}>
@@ -135,7 +144,14 @@ export default function MyCouponsScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {!session?.access_token && !loading ? (
+        <View style={styles.center}>
+          <Ionicons name="lock-closed-outline" size={48} color={Colors.border} />
+          <Text style={{ fontSize: FontSize.base, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
+            Please sign in to view your coupons.
+          </Text>
+        </View>
+      ) : loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={Colors.primary} /></View>
       ) : (
         <FlatList
