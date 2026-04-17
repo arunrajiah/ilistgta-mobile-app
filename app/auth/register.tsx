@@ -6,10 +6,12 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppConfig } from '@/lib/appConfig';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
+  const { branding } = useAppConfig();
   const [fullName, setFullName] = useState('');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +47,10 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logo}>
-          <Image source={require('../../assets/images/logo-dark.png')} style={styles.logoImg} resizeMode="contain" />
+          {branding.logoDark
+            ? <Image source={{ uri: branding.logoDark }} style={styles.logoImg} resizeMode="contain" />
+            : <Image source={require('../../assets/images/logo-dark.png')} style={styles.logoImg} resizeMode="contain" />
+          }
           <Text style={styles.logoSub}>Join the GTA community</Text>
         </View>
 

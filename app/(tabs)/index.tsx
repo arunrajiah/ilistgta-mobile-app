@@ -15,12 +15,14 @@ import CouponCard from '@/components/CouponCard';
 import SearchBar from '@/components/SearchBar';
 import BannerCard from '@/components/BannerCard';
 import { useLang } from '@/lib/i18n';
+import { useAppConfig } from '@/lib/appConfig';
 
 type City = { id: string; name: string; slug: string; image_url?: string; count?: number };
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useLang();
+  const { branding } = useAppConfig();
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -97,11 +99,10 @@ export default function HomeScreen() {
     >
       {/* Hero */}
       <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.hero}>
-        <Image
-          source={require('../../assets/images/logo-light.png')}
-          style={styles.logoImg}
-          resizeMode="contain"
-        />
+        {branding.logoLight
+          ? <Image source={{ uri: branding.logoLight }} style={styles.logoImg} resizeMode="contain" />
+          : <Image source={require('../../assets/images/logo-light.png')} style={styles.logoImg} resizeMode="contain" />
+        }
         <Text style={styles.heroEyebrow}>Greater Toronto Area</Text>
         <Text style={styles.heroTitle}>Discover Local{'\n'}Businesses & Events</Text>
         <View style={styles.heroSearch}>

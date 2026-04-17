@@ -7,10 +7,12 @@ import { useRouter } from 'expo-router';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useLang } from '@/lib/i18n';
+import { useAppConfig } from '@/lib/appConfig';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { t } = useLang();
+  const { branding } = useAppConfig();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -38,7 +40,10 @@ export default function ForgotPasswordScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logo}>
-          <Image source={require('../../assets/images/logo-dark.png')} style={styles.logoImg} resizeMode="contain" />
+          {branding.logoDark
+            ? <Image source={{ uri: branding.logoDark }} style={styles.logoImg} resizeMode="contain" />
+            : <Image source={require('../../assets/images/logo-dark.png')} style={styles.logoImg} resizeMode="contain" />
+          }
           <Text style={styles.logoSub}>{t('auth.resetPassword')}</Text>
         </View>
 

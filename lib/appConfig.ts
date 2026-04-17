@@ -41,6 +41,14 @@ export interface AppConfig {
 
   // ── Deep linking ──────────────────────────────────────────────
   deeplinkScheme: string;
+
+  // ── Branding ──────────────────────────────────────────────────
+  /** Remote logo URLs served from Admin → Settings → Branding */
+  branding: {
+    logoLight: string | null;   // white logo for dark backgrounds
+    logoDark: string | null;    // dark logo for light backgrounds
+    splashColor: string;        // hex background colour for splash
+  };
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -59,6 +67,11 @@ export const DEFAULT_CONFIG: AppConfig = {
     oneSignalAppId: null,
   },
   deeplinkScheme: 'ilistgta',
+  branding: {
+    logoLight: null,
+    logoDark: null,
+    splashColor: '#2d7a2d',
+  },
 };
 
 export const AppConfigContext = createContext<AppConfig>(DEFAULT_CONFIG);
@@ -96,6 +109,11 @@ function mergeConfig(remote: Record<string, any>): AppConfig {
       oneSignalAppId: remote.apiKeys?.oneSignalAppId ?? DEFAULT_CONFIG.apiKeys.oneSignalAppId,
     },
     deeplinkScheme: remote.deeplinkScheme ?? DEFAULT_CONFIG.deeplinkScheme,
+    branding: {
+      logoLight:   remote.branding?.logoLight   ?? DEFAULT_CONFIG.branding.logoLight,
+      logoDark:    remote.branding?.logoDark    ?? DEFAULT_CONFIG.branding.logoDark,
+      splashColor: remote.branding?.splashColor ?? DEFAULT_CONFIG.branding.splashColor,
+    },
   };
 }
 
