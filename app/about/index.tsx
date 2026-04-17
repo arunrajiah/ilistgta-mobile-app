@@ -1,23 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Image } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 export default function AboutScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>About iListGTA</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader title="About iListGTA" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Logo / Hero */}
@@ -68,14 +61,6 @@ export default function AboutScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm, backgroundColor: Colors.surface,
-    borderBottomWidth: 1, borderBottomColor: Colors.border, ...Shadow.sm,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
-  headerSpacer: { width: 36 },
   content: { padding: Spacing.md },
   hero: { alignItems: 'center', paddingVertical: Spacing.xl },
   logoCircle: {

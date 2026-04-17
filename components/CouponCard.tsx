@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Colors, Radius, Shadow, Spacing, FontSize } from '@/constants/theme';
@@ -17,8 +17,20 @@ export default function CouponCard({ coupon }: Props) {
 
   async function copyCode() {
     if (!coupon.code) return;
-    await Clipboard.setStringAsync(coupon.code);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      await Clipboard.setStringAsync(coupon.code);
+    } catch {
+      // fallback for web
+      try {
+        await navigator.clipboard.writeText(coupon.code);
+      } catch {
+        Alert.alert('Copy failed', 'Please copy the code manually: ' + coupon.code);
+        return;
+      }
+    }
+    try {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { /* haptics not available on web */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }

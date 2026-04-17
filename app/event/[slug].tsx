@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Linking, ActivityIndicator, Alert } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
 import { getEventBySlug, formatDate } from '@/lib/api';
@@ -18,6 +19,8 @@ function safeOpen(url: string) {
 
 export default function EventDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +40,17 @@ export default function EventDetailScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Image source={{ uri: imageUrl }} style={styles.heroImage} />
+      <View style={styles.heroWrapper}>
+        <Image source={{ uri: imageUrl }} style={styles.heroImage} />
+        <View style={[styles.heroNav, { top: insets.top + 8 }]}>
+          <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.push('/(tabs)/')}>
+            <Ionicons name="home-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={styles.content}>
         {event.categories && (
@@ -119,6 +132,17 @@ export default function EventDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  heroWrapper: { position: 'relative' },
+  heroNav: {
+    position: 'absolute', left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+  },
+  heroNavBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center', alignItems: 'center',
+  },
   heroImage: { width: '100%', height: 240, resizeMode: 'cover', backgroundColor: Colors.border },
   content: { padding: Spacing.md },
   category: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: '600', marginBottom: 4 },

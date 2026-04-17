@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 const FAQS = [
   { q: 'How do I add my business?', a: 'Go to your Profile tab and tap "Add a Listing". Fill in your business details and submit for review. We\'ll review it within 1-2 business days.' },
@@ -15,18 +15,11 @@ const FAQS = [
 ];
 
 export default function HelpScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader title="Help & FAQ" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.contactCard}>
@@ -57,14 +50,6 @@ export default function HelpScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm, backgroundColor: Colors.surface,
-    borderBottomWidth: 1, borderBottomColor: Colors.border, ...Shadow.sm,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
-  headerSpacer: { width: 36 },
   content: { padding: Spacing.md },
   contactCard: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,

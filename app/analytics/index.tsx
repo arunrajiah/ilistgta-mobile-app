@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { getAnalytics, getMyListings } from '@/lib/api';
 import { AnalyticsEnquiry, AnalyticsLog, Listing } from '@/lib/types';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 const RANGES = [
   { label: '7d',  days: 7 },
@@ -122,14 +123,7 @@ export default function AnalyticsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Analytics</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <ScreenHeader title="Analytics" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -215,12 +209,6 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border, ...Shadow.sm,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
   rangePicker: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.sm, padding: Spacing.md },
   rangeBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   rangeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },

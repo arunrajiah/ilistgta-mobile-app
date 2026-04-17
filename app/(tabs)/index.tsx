@@ -97,6 +97,11 @@ export default function HomeScreen() {
     >
       {/* Hero */}
       <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.hero}>
+        <Image
+          source={require('../../assets/images/logo-light.png')}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
         <Text style={styles.heroEyebrow}>Greater Toronto Area</Text>
         <Text style={styles.heroTitle}>Discover Local{'\n'}Businesses & Events</Text>
         <View style={styles.heroSearch}>
@@ -293,7 +298,8 @@ const styles = StyleSheet.create({
   inlineErrorText: { color: '#b91c1c', fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
   retryBtn: { backgroundColor: Colors.primary, paddingHorizontal: Spacing.lg, paddingVertical: 8, borderRadius: Radius.full },
   retryBtnText: { color: '#fff', fontWeight: '700', fontSize: FontSize.sm },
-  hero: { paddingTop: 64, paddingBottom: 36, paddingHorizontal: Spacing.lg },
+  hero: { paddingTop: 56, paddingBottom: 36, paddingHorizontal: Spacing.lg },
+  logoImg: { width: 180, height: 45, marginBottom: Spacing.md },
   heroEyebrow: { color: 'rgba(255,255,255,0.75)', fontSize: FontSize.sm, fontWeight: '600', marginBottom: 6 },
   heroTitle: { color: '#fff', fontSize: FontSize.xxl, fontWeight: '800', lineHeight: 36, marginBottom: Spacing.lg },
   heroSearch: { marginTop: 4 },

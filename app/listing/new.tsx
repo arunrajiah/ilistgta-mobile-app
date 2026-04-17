@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth';
 import { createListing, getCategories } from '@/lib/api';
 import { Category } from '@/lib/types';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 const CITIES = [
   'Toronto',
@@ -104,13 +105,7 @@ export default function NewListingScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add a Listing</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Add a Listing" />
 
       <ScrollView
         style={styles.scroll}

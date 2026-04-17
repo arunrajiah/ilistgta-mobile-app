@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, FontSize, Radius, Shadow } from '@/constants/theme';
 import { getBlogPosts, formatDate } from '@/lib/api';
 import { BlogPost } from '@/lib/types';
+import ScreenHeader from '@/components/ScreenHeader';
 
 export default function BlogListScreen() {
   const router = useRouter();
@@ -107,14 +108,8 @@ export default function BlogListScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={Colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Blog & Articles</Text>
-          <View style={{ width: 40 }} />
-        </View>
+      <View style={styles.screen}>
+        <ScreenHeader title="Blog" />
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -123,14 +118,8 @@ export default function BlogListScreen() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Blog & Articles</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <View style={styles.screen}>
+      <ScreenHeader title="Blog" />
 
       <FlatList
         data={posts}
@@ -150,13 +139,6 @@ export default function BlogListScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: FontSize.lg, fontWeight: '800', color: Colors.text },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { padding: Spacing.md, gap: Spacing.md },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },

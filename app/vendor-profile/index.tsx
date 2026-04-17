@@ -3,13 +3,13 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth';
 import { getVendorProfile, updateVendorProfile } from '@/lib/api';
 import { VendorProfile } from '@/lib/types';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 const CITIES = [
   'Toronto', 'Mississauga', 'Brampton', 'Markham', 'Vaughan',
@@ -34,7 +34,6 @@ const STATUS_CONFIG: Record<string, { bg: string; color: string; label: string; 
 };
 
 export default function VendorProfileScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
 
@@ -125,15 +124,17 @@ export default function VendorProfileScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Vendor Profile</Text>
-        <TouchableOpacity style={styles.saveIconBtn} onPress={() => handleSave(false)} disabled={saving}>
-          {saving ? <ActivityIndicator size="small" color={Colors.primary} /> : <Ionicons name="checkmark" size={22} color={Colors.primary} />}
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Vendor Profile"
+        rightElement={
+          <TouchableOpacity onPress={() => handleSave(false)} disabled={saving}>
+            {saving
+              ? <ActivityIndicator size="small" color={Colors.primary} />
+              : <Text style={{ color: Colors.primary, fontWeight: '700' }}>Save</Text>
+            }
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* Status banner */}
@@ -253,13 +254,6 @@ export default function VendorProfileScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.surfaceSecondary },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border, ...Shadow.sm,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
-  saveIconBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.md },
   statusBanner: {

@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { getMySaved, unsaveListing, getPrimaryImage } from '@/lib/api';
 import { Listing } from '@/lib/types';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 type SavedItem = { id: string; created_at: string; business_listings: Listing };
 
@@ -130,13 +131,7 @@ export default function SavedScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Saved Businesses</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Saved Businesses" />
 
       <View style={styles.searchRow}>
         <TextInput
@@ -204,14 +199,6 @@ export default function SavedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm, backgroundColor: Colors.surface,
-    borderBottomWidth: 1, borderBottomColor: Colors.border, ...Shadow.sm,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
-  headerSpacer: { width: 36 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: Spacing.md, gap: Spacing.sm },
 

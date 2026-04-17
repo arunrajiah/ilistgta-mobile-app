@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth';
 import { getMyEnquiries, formatDate } from '@/lib/api';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
 
 type Enquiry = {
   id: string; name: string; email: string; phone?: string;
@@ -93,13 +94,7 @@ export default function EnquiriesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Enquiries</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="My Enquiries" />
 
       {!session?.access_token && !loading ? (
         <View style={styles.center}>
@@ -141,14 +136,6 @@ export default function EnquiriesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm, backgroundColor: Colors.surface,
-    borderBottomWidth: 1, borderBottomColor: Colors.border, ...Shadow.sm,
-  },
-  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FontSize.md, fontWeight: '700', color: Colors.text },
-  headerSpacer: { width: 36 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: Spacing.md, gap: Spacing.sm },
 

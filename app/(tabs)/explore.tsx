@@ -131,6 +131,14 @@ export default function ExploreScreen() {
               <Text style={styles.emptyIcon}>🔍</Text>
               <Text style={styles.emptyTitle}>No businesses found</Text>
               <Text style={styles.emptyText}>Try a different search or category</Text>
+              {(search || activeCategory || city) && (
+                <TouchableOpacity
+                  style={styles.clearBtn}
+                  onPress={() => { setSearch(''); setActiveCategory(''); setCity(''); }}
+                >
+                  <Text style={styles.clearBtnText}>Clear Filters</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
           ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={Colors.primary} /> : null}
@@ -172,5 +180,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text, marginBottom: 6 },
-  emptyText: { fontSize: FontSize.base, color: Colors.textMuted },
+  emptyText: { fontSize: FontSize.base, color: Colors.textMuted, marginBottom: 16 },
+  clearBtn: { backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full },
+  clearBtnText: { color: '#fff', fontWeight: '700', fontSize: FontSize.sm },
 });

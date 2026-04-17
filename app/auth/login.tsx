@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
@@ -36,7 +36,7 @@ export default function LoginScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logo}>
-          <Text style={styles.logoText}>iList<Text style={styles.logoGta}>GTA</Text></Text>
+          <Image source={require('../../assets/images/logo-dark.png')} style={styles.logoImg} resizeMode="contain" />
           <Text style={styles.logoSub}>Your GTA Business Directory</Text>
         </View>
 
@@ -72,6 +72,10 @@ export default function LoginScreen() {
           <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/auth/register')}>
             <Text style={styles.linkText}>{t('auth.noAccount')} <Text style={styles.link}>Create one</Text></Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/(tabs)/')}>
+            <Text style={styles.linkText}>← Back to Home</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -81,8 +85,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: Colors.surface, padding: Spacing.xl, justifyContent: 'center' },
   logo: { alignItems: 'center', marginBottom: Spacing.xxl },
-  logoText: { fontSize: 36, fontWeight: '900', color: Colors.text },
-  logoGta: { color: Colors.primary },
+  logoImg: { width: 160, height: 40, marginBottom: 6 },
   logoSub: { fontSize: FontSize.base, color: Colors.textMuted, marginTop: 4 },
   form: { gap: 4 },
   label: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.text, marginTop: Spacing.md, marginBottom: 6 },

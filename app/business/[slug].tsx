@@ -3,7 +3,8 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, Linking, ActivityIndicator, Alert, TextInput, Modal, Platform,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
 import { getListingBySlug, getPrimaryImage, submitEnquiry, checkSaved, saveListing, unsaveListing, submitReview } from '@/lib/api';
@@ -22,6 +23,8 @@ function safeOpen(url: string) {
 
 export default function BusinessDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const [listing, setListing] = useState<Listing | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -146,6 +149,7 @@ export default function BusinessDetailScreen() {
       setEnquiryVisible(false);
       Alert.alert('Sent!', 'Your enquiry has been sent. The business will get back to you soon.');
       setEMessage('');
+      setEPhone('');
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -163,18 +167,29 @@ export default function BusinessDetailScreen() {
     <>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Hero image */}
-        {imgError ? (
-          <View style={[styles.heroImage, styles.heroFallback]}>
-            <Ionicons name="image-outline" size={48} color={Colors.border} />
-            <Text style={styles.heroFallbackText}>{listing.name[0]?.toUpperCase()}</Text>
+        <View style={styles.heroWrapper}>
+          {imgError ? (
+            <View style={[styles.heroImage, styles.heroFallback]}>
+              <Ionicons name="image-outline" size={48} color={Colors.border} />
+              <Text style={styles.heroFallbackText}>{listing.name[0]?.toUpperCase()}</Text>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.heroImage}
+              onError={() => setImgError(true)}
+            />
+          )}
+          {/* Floating nav buttons */}
+          <View style={[styles.heroNav, { top: insets.top + 8 }]}>
+            <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.push('/(tabs)/')}>
+              <Ionicons name="home-outline" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
-        ) : (
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.heroImage}
-            onError={() => setImgError(true)}
-          />
-        )}
+        </View>
 
         <View style={styles.content}>
           {/* Title row */}
@@ -407,6 +422,17 @@ export default function BusinessDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  heroWrapper: { position: 'relative' },
+  heroNav: {
+    position: 'absolute', left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+  },
+  heroNavBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center', alignItems: 'center',
+  },
   heroImage: { width: '100%', height: 260, resizeMode: 'cover', backgroundColor: Colors.border },
   heroFallback: {
     justifyContent: 'center', alignItems: 'center', gap: 8,

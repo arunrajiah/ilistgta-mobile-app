@@ -110,6 +110,9 @@ export default function RootLayout() {
           <Stack.Screen name="account-settings" options={{ headerShown: false }} />
           <Stack.Screen name="help" options={{ headerShown: false }} />
           <Stack.Screen name="about" options={{ headerShown: false }} />
+          <Stack.Screen name="blog" options={{ headerShown: false }} />
+          <Stack.Screen name="blog/[slug]" options={{ headerShown: false }} />
+          <Stack.Screen name="contact" options={{ headerShown: false }} />
         </Stack>
       </AuthProvider>
       </LangProvider>

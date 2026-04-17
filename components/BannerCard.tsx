@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Linking, Dimensions, Image,
+  Linking, Dimensions, Image, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { Banner } from '../lib/types';
 
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function BannerCard({ banners }: Props) {
+  const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -38,7 +40,12 @@ export default function BannerCard({ banners }: Props) {
 
   function handleCTA(url?: string) {
     if (!url) return;
-    Linking.openURL(url).catch(() => {});
+    // Internal app routes (start with /) → stay in-app
+    if (url.startsWith('/')) {
+      router.push(url as any);
+      return;
+    }
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open this link.'));
   }
 
   function onViewableItemsChanged({ viewableItems }: any) {

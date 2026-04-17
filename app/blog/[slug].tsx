@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { getBlogPost, formatDate } from '@/lib/api';
 import { BlogPost } from '@/lib/types';
+import ScreenHeader from '@/components/ScreenHeader';
 
 export default function BlogDetailScreen() {
   const router = useRouter();
@@ -39,12 +40,8 @@ export default function BlogDetailScreen() {
 
   if (notFound || !post) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={Colors.text} />
-          </TouchableOpacity>
-        </View>
+      <View style={styles.screen}>
+        <ScreenHeader title="Blog" />
         <View style={styles.loader}>
           <Ionicons name="document-outline" size={56} color={Colors.border} />
           <Text style={styles.notFoundText}>Article not found</Text>
@@ -125,11 +122,6 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    backgroundColor: Colors.surface,
   },
   content: { padding: Spacing.lg, gap: Spacing.sm },
   chip: {
