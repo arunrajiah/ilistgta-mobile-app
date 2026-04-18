@@ -7,6 +7,23 @@ if (!BASE_URL) {
 }
 
 /**
+ * When running in a web browser on localhost (e.g. `expo start --web` for
+ * screenshot capture), the production API blocks CORS requests.  We route
+ * through corsproxy.io so GET requests succeed without any server change.
+ * This proxy is ONLY used on localhost — native iOS/Android builds are
+ * unaffected because `window` is undefined there.
+ */
+function buildRequestUrl(path: string): string {
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
+    return `https://corsproxy.io/?url=${encodeURIComponent(`${BASE_URL}${path}`)}`;
+  }
+  return `${BASE_URL}${path}`;
+}
+
+/**
  * Override the API base URL at runtime.
  * Called from app/_layout.tsx after remote config is fetched,
  * allowing the admin to push a URL change without a new app build.
@@ -29,7 +46,7 @@ async function request<T>(path: string, options?: RequestInit, token?: string): 
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(buildRequestUrl(path), {
       ...options,
       headers,
       signal: controller.signal,
