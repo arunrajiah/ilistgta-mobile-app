@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { getCategories, getEvents } from '@/lib/api';
 import { Category, Event } from '@/lib/types';
 import { Colors, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
@@ -12,7 +13,10 @@ import EventCard from '@/components/EventCard';
 import { useLang } from '@/lib/i18n';
 
 const PAGE_SIZE = 12;
-const GTA_CITIES = ['All Cities', 'Toronto', 'Mississauga', 'Brampton', 'Markham', 'Vaughan', 'Richmond Hill', 'Oakville', 'Burlington', 'Ajax', 'Pickering'];
+const GTA_CITIES = [
+  'All', 'Toronto', 'Mississauga', 'Brampton', 'Markham',
+  'Vaughan', 'Richmond Hill', 'Oakville', 'Burlington', 'Ajax', 'Pickering',
+];
 
 export default function EventsScreen() {
   const router = useRouter();
@@ -20,7 +24,7 @@ export default function EventsScreen() {
   const { t } = useLang();
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState('');
-  const [activeCity, setActiveCity] = useState('All Cities');
+  const [activeCity, setActiveCity] = useState('');
   const [events, setEvents] = useState<Event[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -37,13 +41,17 @@ export default function EventsScreen() {
     if (reset) setError('');
     try {
       if (reset) setLoading(true); else if (pg > 1) setLoadingMore(true);
-      const city = activeCity !== 'All Cities' ? activeCity : undefined;
-      const data = await getEvents({ category: activeCategory, city, page: pg, limit: PAGE_SIZE });
+      const data = await getEvents({
+        category: activeCategory,
+        city: activeCity || undefined,
+        page: pg,
+        limit: PAGE_SIZE,
+      });
       setEvents(prev => reset ? data.events : [...prev, ...data.events]);
       setTotalPages(data.pagination.pages);
       setPage(pg);
     } catch (e: any) {
-      if (reset) setError(e.message ?? 'Failed to load events. Please try again.');
+      if (reset) setError(e.message ?? 'Failed to load events.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -52,79 +60,103 @@ export default function EventsScreen() {
   }
 
   useEffect(() => { fetchEvents(1, true); }, [activeCategory, activeCity]);
-
-  const onRefresh = useCallback(() => { setRefreshing(true); fetchEvents(1, true); }, [activeCategory]);
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchEvents(1, true); }, [activeCategory, activeCity]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('events.title')}</Text>
-        <Text style={styles.headerSub}>{t('events.subtitle')}</Text>
+    <View style={[s.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={s.header}>
+        <Text style={s.headerTitle}>{t('events.title')}</Text>
+        <Text style={s.headerSub}>{t('events.subtitle')}</Text>
       </View>
 
       {/* Category filter */}
-      <FlatList
-        horizontal
-        data={[{ id: '', name: t('events.allEvents'), slug: '', icon: '🎉', type: 'event' as const }, ...categories]}
-        keyExtractor={c => c.id || 'all'}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterList}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.chip, activeCategory === item.slug && styles.chipActive]}
-            onPress={() => setActiveCategory(item.slug)}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.chipText, activeCategory === item.slug && styles.chipTextActive]}>
-              {item.icon} {item.name}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
+      <View style={s.filterWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.filterList}
+        >
+          {[{ id: '_all', name: 'All Events', slug: '', icon: '🎉' }, ...categories].map(cat => {
+            const active = activeCategory === cat.slug;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={[s.chip, active && s.chipActive]}
+                onPress={() => setActiveCategory(cat.slug)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.chipText, active && s.chipTextActive]}>
+                  {cat.icon} {cat.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
-      {/* City filter */}
-      <FlatList
-        horizontal
-        data={GTA_CITIES}
-        keyExtractor={c => c}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterList}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.chip, activeCity === item && styles.chipActive]}
-            onPress={() => setActiveCity(item)}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.chipText, activeCity === item && styles.chipTextActive]}>{item}</Text>
-          </TouchableOpacity>
-        )}
-      />
+        {/* City filter */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.cityList}
+        >
+          {GTA_CITIES.map(c => {
+            const val = c === 'All' ? '' : c;
+            const active = activeCity === val;
+            return (
+              <TouchableOpacity
+                key={c}
+                style={[s.cityChip, active && s.cityChipActive]}
+                onPress={() => setActiveCity(val)}
+                activeOpacity={0.75}
+              >
+                {active && <Ionicons name="location-sharp" size={11} color="#fff" />}
+                <Text style={[s.cityChipText, active && s.cityChipTextActive]}>{c}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
+      {/* Events list */}
       {loading ? (
-        <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={s.loadingText}>Loading events…</Text>
+        </View>
       ) : error ? (
-        <View style={styles.loader}>
-          <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
-          <TouchableOpacity onPress={() => fetchEvents(1, true)} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
-            <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+        <View style={s.errorBox}>
+          <Ionicons name="cloud-offline-outline" size={44} color={Colors.textMuted} />
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => fetchEvents(1, true)}>
+            <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={events}
           keyExtractor={e => e.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={s.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
           onEndReached={() => { if (!loadingMore && page < totalPages) fetchEvents(page + 1); }}
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📅</Text>
-              <Text style={styles.emptyTitle}>No upcoming events</Text>
-              <Text style={styles.emptyText}>Check back soon!</Text>
+            <View style={s.empty}>
+              <Ionicons name="calendar" size={56} color={Colors.border} />
+              <Text style={s.emptyTitle}>No upcoming events</Text>
+              <Text style={s.emptyText}>Check back soon for new events!</Text>
+              {(activeCategory || activeCity) && (
+                <TouchableOpacity style={s.retryBtn} onPress={() => { setActiveCategory(''); setActiveCity(''); }}>
+                  <Text style={s.retryText}>Clear Filters</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={Colors.primary} /> : null}
+          ListFooterComponent={
+            loadingMore
+              ? <ActivityIndicator style={{ paddingVertical: 20 }} color={Colors.primary} />
+              : null
+          }
           renderItem={({ item }) => (
             <EventCard event={item} onPress={() => router.push(`/event/${item.slug}`)} />
           )}
@@ -134,24 +166,50 @@ export default function EventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: { backgroundColor: Colors.surface, padding: Spacing.md, ...Shadow.sm },
+  header: {
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+    ...Shadow.sm,
+  },
   headerTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.text },
   headerSub: { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2 },
+  filterWrap: {
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    paddingBottom: Spacing.sm,
+  },
   filterList: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm },
   chip: {
-    paddingHorizontal: Spacing.md, paddingVertical: 6,
-    backgroundColor: Colors.surface, borderRadius: Radius.full,
-    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: Colors.surfaceSecondary,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
   },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   chipText: { fontSize: FontSize.sm, color: Colors.text, fontWeight: '600' },
   chipTextActive: { color: '#fff' },
-  listContent: { padding: Spacing.md },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text, marginBottom: 6 },
-  emptyText: { fontSize: FontSize.base, color: Colors.textMuted },
+  cityList: { paddingHorizontal: Spacing.md, paddingVertical: 4, gap: 8 },
+  cityChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 14, paddingVertical: 6,
+    backgroundColor: Colors.surfaceSecondary,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
+  },
+  cityChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  cityChipText: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: '600' },
+  cityChipTextActive: { color: '#fff' },
+  listContent: { padding: Spacing.md, paddingBottom: Spacing.xxl },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
+  loadingText: { color: Colors.textMuted, fontSize: FontSize.sm },
+  errorBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl, gap: Spacing.md },
+  errorText: { color: Colors.textSecondary, fontSize: FontSize.base, textAlign: 'center' },
+  retryBtn: {
+    backgroundColor: Colors.primary, borderRadius: Radius.full,
+    paddingHorizontal: Spacing.xl, paddingVertical: 10,
+  },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: FontSize.base },
+  empty: { alignItems: 'center', paddingTop: 60, gap: Spacing.sm },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text, marginTop: Spacing.md },
+  emptyText: { fontSize: FontSize.base, color: Colors.textMuted, marginBottom: Spacing.md },
 });

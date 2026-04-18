@@ -6,23 +6,42 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, Radius, Shadow } from '@/constants/theme';
-import { getCategories, getListings, getEvents, getCoupons, getBanners, getCities, submitNewsletter } from '@/lib/api';
+import {
+  getCategories, getListings, getEvents, getCoupons,
+  getBanners, getCities, submitNewsletter,
+} from '@/lib/api';
 import { Category, Listing, Event, Coupon, Banner } from '@/lib/types';
 import ListingCard from '@/components/ListingCard';
 import EventCard from '@/components/EventCard';
 import CouponCard from '@/components/CouponCard';
-import SearchBar from '@/components/SearchBar';
 import BannerCard from '@/components/BannerCard';
 import { useLang } from '@/lib/i18n';
 import { useAppConfig } from '@/lib/appConfig';
 
 type City = { id: string; name: string; slug: string; image_url?: string; count?: number };
 
+/* ─── Section header ──────────────────────────────────────────── */
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
+  return (
+    <View style={s.sectionHeader}>
+      <Text style={s.sectionTitle}>{title}</Text>
+      {onSeeAll && (
+        <TouchableOpacity onPress={onSeeAll} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={s.seeAll}>See All</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useLang();
   const { branding } = useAppConfig();
+  const insets = useSafeAreaInsets();
+
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -40,7 +59,7 @@ export default function HomeScreen() {
   async function fetchAll() {
     setError('');
     try {
-      const [catsResult, listResult, eventResult, couponResult, bannerResult, citiesResult] = await Promise.allSettled([
+      const [catsR, listR, evtR, cpnR, banR, citR] = await Promise.allSettled([
         getCategories('business'),
         getListings({ limit: 8 }),
         getEvents({ limit: 6 }),
@@ -48,18 +67,15 @@ export default function HomeScreen() {
         getBanners({ page: 'home', limit: 5 }),
         getCities(8),
       ]);
-
-      if (catsResult.status === 'fulfilled')   setCategories(catsResult.value);
-      if (listResult.status === 'fulfilled')   setListings(listResult.value.listings);
-      if (eventResult.status === 'fulfilled')  setEvents(eventResult.value.events);
-      if (couponResult.status === 'fulfilled') setCoupons(couponResult.value.coupons);
-      if (bannerResult.status === 'fulfilled') setBanners(bannerResult.value.banners ?? []);
-      if (citiesResult.status === 'fulfilled') setCities(citiesResult.value.cities ?? []);
-
-      const allFailed = [catsResult, listResult, eventResult, couponResult].every(r => r.status === 'rejected');
+      if (catsR.status === 'fulfilled') setCategories(catsR.value);
+      if (listR.status === 'fulfilled') setListings(listR.value.listings);
+      if (evtR.status === 'fulfilled')  setEvents(evtR.value.events);
+      if (cpnR.status === 'fulfilled')  setCoupons(cpnR.value.coupons);
+      if (banR.status === 'fulfilled')  setBanners(banR.value.banners ?? []);
+      if (citR.status === 'fulfilled')  setCities(citR.value.cities ?? []);
+      const allFailed = [catsR, listR, evtR, cpnR].every(r => r.status === 'rejected');
       if (allFailed) {
-        const firstErr = (catsResult as PromiseRejectedResult).reason;
-        setError(firstErr?.message ?? 'Failed to load. Please check your connection and try again.');
+        setError((catsR as PromiseRejectedResult).reason?.message ?? 'Failed to load. Please check your connection.');
       }
     } finally {
       setLoading(false);
@@ -68,7 +84,6 @@ export default function HomeScreen() {
   }
 
   useEffect(() => { fetchAll(); }, []);
-
   const onRefresh = useCallback(() => { setRefreshing(true); fetchAll(); }, []);
 
   function handleSearch() {
@@ -93,84 +108,129 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={s.container}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
     >
-      {/* Hero */}
-      <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.hero}>
-        {branding.logoLight
-          ? <Image source={{ uri: branding.logoLight }} style={styles.logoImg} resizeMode="contain" />
-          : <Image source={require('../../assets/images/logo-light.png')} style={styles.logoImg} resizeMode="contain" />
-        }
-        <Text style={styles.heroEyebrow}>Greater Toronto Area</Text>
-        <Text style={styles.heroTitle}>Discover Local{'\n'}Businesses & Events</Text>
-        <View style={styles.heroSearch}>
-          <SearchBar value={search} onChangeText={setSearch} onSubmit={handleSearch} />
+      {/* ── Top Header ─────────────────────────────────────────── */}
+      <LinearGradient
+        colors={[Colors.primary, Colors.primaryDark]}
+        style={[s.header, { paddingTop: insets.top + 12 }]}
+      >
+        {/* Logo row */}
+        <View style={s.headerTop}>
+          {branding.logoLight
+            ? <Image source={{ uri: branding.logoLight }} style={s.logo} resizeMode="contain" />
+            : <Image source={require('../../assets/images/logo-light.png')} style={s.logo} resizeMode="contain" />
+          }
+          <TouchableOpacity style={s.notifBtn} onPress={() => router.push('/(tabs)/explore')}>
+            <Ionicons name="search" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
+
+        {/* Location & tagline */}
+        <View style={s.locationRow}>
+          <Ionicons name="location-sharp" size={14} color="rgba(255,255,255,0.85)" />
+          <Text style={s.locationText}>Greater Toronto Area</Text>
+        </View>
+        <Text style={s.heroTitle}>Discover Local{'\n'}Businesses & Events</Text>
+
+        {/* Search bar */}
+        <TouchableOpacity
+          style={s.searchBar}
+          onPress={() => router.push('/(tabs)/explore')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="search" size={18} color={Colors.textMuted} />
+          <Text style={s.searchPlaceholder}>Search businesses, events…</Text>
+          <View style={s.searchFilter}>
+            <Ionicons name="options-outline" size={16} color={Colors.primary} />
+          </View>
+        </TouchableOpacity>
       </LinearGradient>
 
+      {/* ── Loading / Error ─────────────────────────────────────── */}
       {loading && (
-        <View style={styles.inlineLoader}>
+        <View style={s.loader}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       )}
 
-      {!loading && error ? (
-        <View style={styles.inlineError}>
-          <Text style={styles.inlineErrorText}>{error}</Text>
-          <TouchableOpacity onPress={() => { setLoading(true); fetchAll(); }} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>{t('home.retry')}</Text>
+      {!loading && !!error && (
+        <View style={s.errorBox}>
+          <Ionicons name="cloud-offline-outline" size={40} color={Colors.textMuted} />
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => { setLoading(true); fetchAll(); }}>
+            <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
-      ) : null}
+      )}
 
-      {/* Banners */}
-      {!loading && banners.length > 0 && <BannerCard banners={banners} />}
+      {/* ── Banners ──────────────────────────────────────────────── */}
+      {!loading && banners.length > 0 && (
+        <View style={s.bannerWrap}>
+          <BannerCard banners={banners} />
+        </View>
+      )}
 
-      {!loading && (
+      {!loading && !error && (
         <>
-          {/* Categories */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('home.browseCategories')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {categories.map(cat => (
+          {/* ── Categories ──────────────────────────────────────── */}
+          {categories.length > 0 && (
+            <View style={s.section}>
+              <SectionHeader
+                title={t('home.browseCategories')}
+                onSeeAll={() => router.push('/(tabs)/explore')}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.catScroll}
+              >
+                {categories.map(cat => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={s.catItem}
+                    onPress={() => router.push({ pathname: '/(tabs)/explore', params: { category: cat.slug } })}
+                    activeOpacity={0.75}
+                  >
+                    <View style={s.catIconWrap}>
+                      <Text style={s.catIcon}>{cat.icon}</Text>
+                    </View>
+                    <Text style={s.catName} numberOfLines={1}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
-                  key={cat.id}
-                  style={styles.categoryChip}
-                  onPress={() => router.push({ pathname: '/(tabs)/explore', params: { category: cat.slug } })}
+                  style={s.catItem}
+                  onPress={() => router.push('/(tabs)/explore')}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                  <Text style={styles.categoryName}>{cat.name}</Text>
+                  <View style={[s.catIconWrap, s.catIconMore]}>
+                    <Ionicons name="grid-outline" size={22} color={Colors.primary} />
+                  </View>
+                  <Text style={[s.catName, { color: Colors.primary }]}>More</Text>
                 </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={[styles.categoryChip, styles.categoryChipMore]}
-                onPress={() => router.push('/(tabs)/explore')}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.categoryIcon, { color: Colors.primary }]}>→</Text>
-                <Text style={[styles.categoryName, { color: Colors.primary, fontWeight: '700' }]}>{t('home.more')}</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
+              </ScrollView>
+            </View>
+          )}
 
-          {/* Featured Businesses */}
+          {/* ── Featured Businesses ─────────────────────────────── */}
           {listings.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t('home.featuredBusinesses')}</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
-                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {listings.map(listing => (
+            <View style={s.section}>
+              <SectionHeader
+                title={t('home.featuredBusinesses')}
+                onSeeAll={() => router.push('/(tabs)/explore')}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 4 }}
+              >
+                {listings.slice(0, 6).map(listing => (
                   <ListingCard
                     key={listing.id}
                     listing={listing}
-                    horizontal
+                    compact
                     onPress={() => router.push(`/business/${listing.slug}`)}
                   />
                 ))}
@@ -178,34 +238,54 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Browse by City */}
+          {/* ── All Businesses (horizontal list rows) ───────────── */}
+          {listings.length > 0 && (
+            <View style={s.section}>
+              <SectionHeader
+                title="Popular Near You"
+                onSeeAll={() => router.push('/(tabs)/explore')}
+              />
+              {listings.slice(0, 4).map(listing => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  horizontal
+                  onPress={() => router.push(`/business/${listing.slug}`)}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* ── Browse by City ──────────────────────────────────── */}
           {cities.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t('home.browseCity')}</Text>
-                <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/explore' })}>
-                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cityScroll}>
+            <View style={s.section}>
+              <SectionHeader
+                title={t('home.browseCity')}
+                onSeeAll={() => router.push('/(tabs)/explore')}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.cityScroll}
+              >
                 {cities.map(city => (
                   <TouchableOpacity
                     key={city.id}
-                    style={styles.cityCard}
+                    style={s.cityCard}
                     onPress={() => router.push({ pathname: '/(tabs)/explore', params: { city: city.name } })}
                     activeOpacity={0.8}
                   >
                     {city.image_url ? (
-                      <Image source={{ uri: city.image_url }} style={styles.cityImage} resizeMode="cover" />
+                      <Image source={{ uri: city.image_url }} style={s.cityImg} resizeMode="cover" />
                     ) : (
-                      <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.cityImage}>
-                        <Text style={styles.cityInitial}>{city.name.charAt(0)}</Text>
+                      <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={s.cityImg}>
+                        <Text style={s.cityInitial}>{city.name.charAt(0)}</Text>
                       </LinearGradient>
                     )}
-                    <View style={styles.cityInfo}>
-                      <Text style={styles.cityName} numberOfLines={1}>{city.name}</Text>
-                      {city.count != null && city.count > 0 && (
-                        <Text style={styles.cityCount}>{city.count} {t('home.businesses')}</Text>
+                    <View style={s.cityInfo}>
+                      <Text style={s.cityName} numberOfLines={1}>{city.name}</Text>
+                      {(city.count ?? 0) > 0 && (
+                        <Text style={s.cityCount}>{city.count} businesses</Text>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -214,70 +294,76 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Upcoming Events */}
+          {/* ── Upcoming Events ──────────────────────────────────── */}
           {events.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t('home.upcomingEvents')}</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/events')}>
-                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
-                </TouchableOpacity>
-              </View>
-              {events.slice(0, 3).map(event => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  onPress={() => router.push(`/event/${event.slug}`)}
-                />
-              ))}
+            <View style={s.section}>
+              <SectionHeader
+                title={t('home.upcomingEvents')}
+                onSeeAll={() => router.push('/(tabs)/events')}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 4 }}
+              >
+                {events.map(event => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    compact
+                    onPress={() => router.push(`/event/${event.slug}`)}
+                  />
+                ))}
+              </ScrollView>
             </View>
           )}
 
-          {/* Hot Deals & Coupons */}
+          {/* ── Hot Deals & Coupons ──────────────────────────────── */}
           {coupons.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t('home.hotDeals')}</Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/coupons')}>
-                  <Text style={styles.seeAll}>{t('home.seeAll')} →</Text>
-                </TouchableOpacity>
-              </View>
+            <View style={s.section}>
+              <SectionHeader
+                title={t('home.hotDeals')}
+                onSeeAll={() => router.push('/(tabs)/coupons')}
+              />
               {coupons.slice(0, 3).map(coupon => (
                 <CouponCard key={coupon.id} coupon={coupon} />
               ))}
             </View>
           )}
 
-          {/* Newsletter */}
-          <View style={styles.section}>
-            <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.newsletter}>
-              <Text style={styles.newsletterTitle}>{t('home.newsletter')}</Text>
-              <Text style={styles.newsletterSub}>{t('home.newsletterSubtitle')}</Text>
+          {/* ── Newsletter ───────────────────────────────────────── */}
+          <View style={s.section}>
+            <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={s.newsletter}>
+              <View style={s.nlIconWrap}>
+                <Ionicons name="mail" size={24} color="#fff" />
+              </View>
+              <Text style={s.nlTitle}>{t('home.newsletter')}</Text>
+              <Text style={s.nlSub}>{t('home.newsletterSubtitle')}</Text>
               {subscribed ? (
-                <View style={styles.subscribedRow}>
+                <View style={s.subscribedRow}>
                   <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.subscribedText}>{t('home.subscribed')}</Text>
+                  <Text style={s.subscribedText}>{t('home.subscribed')}</Text>
                 </View>
               ) : (
-                <View style={styles.newsletterRow}>
+                <View style={s.nlRow}>
                   <TextInput
-                    style={styles.newsletterInput}
+                    style={s.nlInput}
                     placeholder={t('home.emailPlaceholder')}
-                    placeholderTextColor="rgba(255,255,255,0.65)"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
                     value={newsletterEmail}
                     onChangeText={setNewsletterEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
                   <TouchableOpacity
-                    style={styles.subscribeBtn}
+                    style={s.subscribeBtn}
                     onPress={handleSubscribe}
                     disabled={subscribing}
                     activeOpacity={0.85}
                   >
                     {subscribing
                       ? <ActivityIndicator color={Colors.primary} size="small" />
-                      : <Text style={styles.subscribeBtnText}>{t('home.subscribe')}</Text>
+                      : <Text style={s.subscribeBtnText}>{t('home.subscribe')}</Text>
                     }
                   </TouchableOpacity>
                 </View>
@@ -292,57 +378,105 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  inlineLoader: { paddingVertical: 48, alignItems: 'center', justifyContent: 'center' },
-  inlineError: { margin: Spacing.md, padding: Spacing.lg, backgroundColor: '#fef2f2', borderRadius: Radius.lg, alignItems: 'center', gap: Spacing.sm },
-  inlineErrorText: { color: '#b91c1c', fontSize: FontSize.sm, textAlign: 'center', lineHeight: 20 },
-  retryBtn: { backgroundColor: Colors.primary, paddingHorizontal: Spacing.lg, paddingVertical: 8, borderRadius: Radius.full },
-  retryBtnText: { color: '#fff', fontWeight: '700', fontSize: FontSize.sm },
-  hero: { paddingTop: 56, paddingBottom: 36, paddingHorizontal: Spacing.lg },
-  logoImg: { width: 180, height: 45, marginBottom: Spacing.md },
-  heroEyebrow: { color: 'rgba(255,255,255,0.75)', fontSize: FontSize.sm, fontWeight: '600', marginBottom: 6 },
-  heroTitle: { color: '#fff', fontSize: FontSize.xxl, fontWeight: '800', lineHeight: 36, marginBottom: Spacing.lg },
-  heroSearch: { marginTop: 4 },
-  section: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  sectionTitle: { fontSize: FontSize.lg, fontWeight: '800', color: Colors.text },
-  seeAll: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: '600' },
-  categoryScroll: { marginVertical: Spacing.sm },
-  categoryChip: {
-    alignItems: 'center', marginRight: Spacing.sm,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    ...Shadow.sm, minWidth: 80,
+
+  /* ── Header ── */
+  header: { paddingHorizontal: Spacing.lg, paddingBottom: 28 },
+  headerTop: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.md,
   },
-  categoryChipMore: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+  logo: { width: 160, height: 40 },
+  notifBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
+  locationText: { color: 'rgba(255,255,255,0.85)', fontSize: FontSize.sm, fontWeight: '500' },
+  heroTitle: {
+    color: '#fff', fontSize: FontSize.xxl, fontWeight: '800',
+    lineHeight: 36, marginBottom: Spacing.lg,
+  },
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: '#fff', borderRadius: Radius.xl,
+    paddingHorizontal: Spacing.md, paddingVertical: 12,
+    ...Shadow.sm,
+  },
+  searchPlaceholder: { flex: 1, fontSize: FontSize.base, color: Colors.textMuted },
+  searchFilter: {
+    width: 32, height: 32, borderRadius: Radius.md,
     backgroundColor: Colors.primaryBg,
+    justifyContent: 'center', alignItems: 'center',
   },
-  categoryIcon: { fontSize: 24, marginBottom: 4 },
-  categoryName: { fontSize: FontSize.xs, fontWeight: '600', color: Colors.text, textAlign: 'center' },
-  // Cities
-  cityScroll: { marginTop: Spacing.sm },
+
+  /* ── Banners ── */
+  bannerWrap: { marginTop: Spacing.md },
+
+  /* ── Loader / Error ── */
+  loader: { paddingVertical: 56, alignItems: 'center' },
+  errorBox: { alignItems: 'center', padding: Spacing.xl, gap: Spacing.md },
+  errorText: { fontSize: FontSize.base, color: Colors.textSecondary, textAlign: 'center' },
+  retryBtn: {
+    backgroundColor: Colors.primary, borderRadius: Radius.full,
+    paddingHorizontal: Spacing.xl, paddingVertical: 10,
+  },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: FontSize.base },
+
+  /* ── Sections ── */
+  section: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg + 4 },
+  sectionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  sectionTitle: { fontSize: FontSize.lg, fontWeight: '800', color: Colors.text },
+  seeAll: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: '700' },
+
+  /* ── Categories ── */
+  catScroll: { gap: Spacing.md, paddingBottom: 4 },
+  catItem: { alignItems: 'center', width: 68 },
+  catIconWrap: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 6,
+    ...Shadow.sm,
+  },
+  catIconMore: { backgroundColor: Colors.primaryBg },
+  catIcon: { fontSize: 26 },
+  catName: {
+    fontSize: FontSize.xs, fontWeight: '600', color: Colors.text,
+    textAlign: 'center',
+  },
+
+  /* ── Cities ── */
+  cityScroll: { gap: Spacing.sm, paddingBottom: 4 },
   cityCard: {
-    width: 120, marginRight: Spacing.sm, borderRadius: Radius.lg,
+    width: 120, borderRadius: Radius.xl,
     backgroundColor: Colors.surface, overflow: 'hidden', ...Shadow.sm,
   },
-  cityImage: {
-    width: 120, height: 80,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  cityImg: { width: 120, height: 80, alignItems: 'center', justifyContent: 'center' },
   cityInitial: { fontSize: 32, fontWeight: '800', color: '#fff' },
   cityInfo: { padding: Spacing.sm },
   cityName: { fontSize: FontSize.sm, fontWeight: '700', color: Colors.text },
   cityCount: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },
-  newsletter: { borderRadius: Radius.lg, padding: Spacing.lg, gap: Spacing.sm, marginBottom: Spacing.sm },
-  newsletterTitle: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
-  newsletterSub: { color: 'rgba(255,255,255,0.85)', fontSize: FontSize.sm, marginBottom: Spacing.sm },
-  newsletterRow: { flexDirection: 'row', gap: Spacing.sm },
-  newsletterInput: {
-    flex: 1, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md, paddingVertical: 10,
+
+  /* ── Newsletter ── */
+  newsletter: { borderRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm, marginBottom: Spacing.sm },
+  nlIconWrap: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 4,
+  },
+  nlTitle: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
+  nlSub: { color: 'rgba(255,255,255,0.85)', fontSize: FontSize.sm, marginBottom: 4 },
+  nlRow: { flexDirection: 'row', gap: Spacing.sm },
+  nlInput: {
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 10,
     color: '#fff', fontSize: FontSize.sm,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)',
   },

@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { getCoupons } from '@/lib/api';
 import { Coupon } from '@/lib/types';
 import { Colors, FontSize, Radius, Spacing, Shadow } from '@/constants/theme';
@@ -32,7 +33,7 @@ export default function CouponsScreen() {
       setTotalPages(data.pagination.pages);
       setPage(pg);
     } catch (e: any) {
-      if (reset) setError(e.message ?? 'Failed to load deals. Please try again.');
+      if (reset) setError(e.message ?? 'Failed to load deals.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -41,41 +42,55 @@ export default function CouponsScreen() {
   }
 
   useEffect(() => { fetchCoupons(1, true); }, []);
-
   const onRefresh = useCallback(() => { setRefreshing(true); fetchCoupons(1, true); }, []);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('deals.title')}</Text>
-        <Text style={styles.headerSub}>{t('deals.subtitle')}</Text>
+    <View style={[s.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={s.header}>
+        <View>
+          <Text style={s.headerTitle}>{t('deals.title')}</Text>
+          <Text style={s.headerSub}>{t('deals.subtitle')}</Text>
+        </View>
+        <View style={s.headerBadge}>
+          <Ionicons name="pricetag" size={16} color={Colors.primary} />
+          <Text style={s.headerBadgeText}>Hot Deals</Text>
+        </View>
       </View>
 
       {loading ? (
-        <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={s.loadingText}>Loading deals…</Text>
+        </View>
       ) : error ? (
-        <View style={styles.loader}>
-          <Text style={{ color: Colors.textMuted, fontSize: FontSize.base, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
-          <TouchableOpacity onPress={() => fetchCoupons(1, true)} style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: Radius.full }}>
-            <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+        <View style={s.errorBox}>
+          <Ionicons name="cloud-offline-outline" size={44} color={Colors.textMuted} />
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => fetchCoupons(1, true)}>
+            <Text style={s.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={coupons}
           keyExtractor={c => c.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={s.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
           onEndReached={() => { if (!loadingMore && page < totalPages) fetchCoupons(page + 1); }}
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>🏷️</Text>
-              <Text style={styles.emptyTitle}>No deals right now</Text>
-              <Text style={styles.emptyText}>Check back soon for great offers!</Text>
+            <View style={s.empty}>
+              <Ionicons name="pricetag" size={56} color={Colors.border} />
+              <Text style={s.emptyTitle}>No deals right now</Text>
+              <Text style={s.emptyText}>Check back soon for great offers!</Text>
             </View>
           }
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={{ padding: 16 }} color={Colors.primary} /> : null}
+          ListFooterComponent={
+            loadingMore
+              ? <ActivityIndicator style={{ paddingVertical: 20 }} color={Colors.primary} />
+              : null
+          }
           renderItem={({ item }) => <CouponCard coupon={item} />}
         />
       )}
@@ -83,15 +98,33 @@ export default function CouponsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
-  header: { backgroundColor: Colors.surface, padding: Spacing.md, ...Shadow.sm },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+    ...Shadow.sm,
+  },
   headerTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.text },
   headerSub: { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2 },
-  listContent: { padding: Spacing.md },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text, marginBottom: 6 },
+  headerBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: Colors.primaryBg, borderRadius: Radius.full,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  headerBadgeText: { fontSize: FontSize.xs, color: Colors.primary, fontWeight: '700' },
+  listContent: { padding: Spacing.md, paddingBottom: Spacing.xxl },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
+  loadingText: { color: Colors.textMuted, fontSize: FontSize.sm },
+  errorBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl, gap: Spacing.md },
+  errorText: { color: Colors.textSecondary, fontSize: FontSize.base, textAlign: 'center' },
+  retryBtn: {
+    backgroundColor: Colors.primary, borderRadius: Radius.full,
+    paddingHorizontal: Spacing.xl, paddingVertical: 10,
+  },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: FontSize.base },
+  empty: { alignItems: 'center', paddingTop: 60, gap: Spacing.sm },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text, marginTop: Spacing.md },
   emptyText: { fontSize: FontSize.base, color: Colors.textMuted },
 });
