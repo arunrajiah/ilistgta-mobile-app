@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Image, Linking, ActivityIndicator, Alert, TextInput, Modal, Platform,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
@@ -52,6 +55,7 @@ export default function BusinessDetailScreen() {
 
   // Hero image error state
   const [imgError, setImgError] = useState(false);
+  const [activeTab, setActiveTab] = useState<'services' | 'products' | 'reviews'>('services');
 
   useEffect(() => {
     if (!slug) return;
@@ -185,7 +189,7 @@ export default function BusinessDetailScreen() {
             <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.push('/(tabs)/')}>
+            <TouchableOpacity style={styles.heroNavBtn} onPress={() => router.push('/(tabs)' as any)}>
               <Ionicons name="home-outline" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -231,27 +235,51 @@ export default function BusinessDetailScreen() {
             </View>
           )}
 
-          {/* Action buttons */}
+          {/* Stats row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{(listing as any).years_in_business ? `${(listing as any).years_in_business} Yrs` : '—'}</Text>
+              <Text style={styles.statLabel}>Experience</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{listing.review_count > 0 ? `${listing.review_count}+` : '—'}</Text>
+              <Text style={styles.statLabel}>Reviews</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{'< 2h'}</Text>
+              <Text style={styles.statLabel}>Response</Text>
+            </View>
+          </View>
+
+          {/* Action buttons — icon + label below */}
           <View style={styles.actions}>
             {listing.phone && (
-              <TouchableOpacity style={styles.actionBtn} onPress={() => safeOpen(`tel:${listing.phone}`)}>
-                <Ionicons name="call" size={18} color={Colors.primary} />
-                <Text style={styles.actionBtnText}>Call</Text>
+              <TouchableOpacity style={styles.actionItem} onPress={() => safeOpen(`tel:${listing.phone}`)}>
+                <View style={styles.actionCircle}>
+                  <Ionicons name="call" size={20} color={Colors.primary} />
+                </View>
+                <Text style={styles.actionLabel}>Call</Text>
               </TouchableOpacity>
             )}
             {listing.website && (
-              <TouchableOpacity style={styles.actionBtn} onPress={() => safeOpen(listing.website!)}>
-                <Ionicons name="globe" size={18} color={Colors.primary} />
-                <Text style={styles.actionBtnText}>Website</Text>
+              <TouchableOpacity style={styles.actionItem} onPress={() => safeOpen(listing.website!)}>
+                <View style={styles.actionCircle}>
+                  <Ionicons name="globe" size={20} color={Colors.primary} />
+                </View>
+                <Text style={styles.actionLabel}>Website</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={() => setEnquiryVisible(true)}>
-              <Ionicons name="mail" size={18} color="#fff" />
-              <Text style={[styles.actionBtnText, { color: '#fff' }]}>Enquire</Text>
+            <TouchableOpacity style={styles.actionItem} onPress={() => setEnquiryVisible(true)}>
+              <View style={[styles.actionCircle, styles.actionCirclePrimary]}>
+                <Ionicons name="mail" size={20} color="#fff" />
+              </View>
+              <Text style={styles.actionLabel}>Enquire</Text>
             </TouchableOpacity>
             {listing.address && (
               <TouchableOpacity
-                style={styles.actionBtn}
+                style={styles.actionItem}
                 onPress={() => {
                   const q = encodeURIComponent(`${listing.address}, ${listing.city}, Ontario, Canada`);
                   const url = Platform.OS === 'ios'
@@ -262,8 +290,10 @@ export default function BusinessDetailScreen() {
                   );
                 }}
               >
-                <Ionicons name="navigate" size={18} color={Colors.primary} />
-                <Text style={styles.actionBtnText}>Directions</Text>
+                <View style={styles.actionCircle}>
+                  <Ionicons name="navigate" size={20} color={Colors.primary} />
+                </View>
+                <Text style={styles.actionLabel}>Directions</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -300,7 +330,50 @@ export default function BusinessDetailScreen() {
             </View>
           )}
 
-          {/* Reviews */}
+          {/* Exclusive Offers */}
+          {(listing as any).coupons && (listing as any).coupons.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Exclusive Offers</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.sm }}>
+                {((listing as any).coupons as any[]).map((cpn: any) => (
+                  <View key={cpn.id} style={styles.offerCard}>
+                    <LinearGradient colors={[Colors.primary, Colors.primaryLight]} style={styles.offerBadge}>
+                      <Text style={styles.offerBadgeText}>
+                        {cpn.discount_type === 'percentage' ? `${cpn.discount_value}% Off` : `$${cpn.discount_value} Off`}
+                      </Text>
+                    </LinearGradient>
+                    <Text style={styles.offerTitle}>{cpn.title}</Text>
+                    {cpn.valid_until && <Text style={styles.offerValid}>Valid: {cpn.valid_until}</Text>}
+                    <TouchableOpacity
+                      style={styles.offerCode}
+                      onPress={() => Clipboard.setStringAsync(cpn.code).then(() => Alert.alert('Copied!', `Code "${cpn.code}" copied.`))}
+                    >
+                      <Text style={styles.offerCodeText}>{cpn.code}</Text>
+                      <Ionicons name="copy-outline" size={13} color={Colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Services / Products / Reviews tabs */}
+          <View style={styles.tabsBar}>
+            {(['services', 'products', 'reviews'] as const).map(tab => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabBtnText, activeTab === tab && styles.tabBtnTextActive]}>
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Reviews tab content */}
+          {activeTab === 'reviews' && (
           <View style={styles.section}>
             <View style={styles.reviewsHeader}>
               <Text style={styles.sectionTitle}>Reviews</Text>
@@ -343,8 +416,38 @@ export default function BusinessDetailScreen() {
             </View>
           ))}
           </View>
+          )}
 
-          <View style={{ height: Spacing.xxl }} />
+          {/* Services tab */}
+          {activeTab === 'services' && (
+            <View style={styles.section}>
+              {(listing as any).services && (listing as any).services.length > 0 ? ((listing as any).services as any[]).map((svc: any, i: number) => (
+                <View key={i} style={styles.serviceRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.serviceName}>{svc.name}</Text>
+                    {svc.description && <Text style={styles.serviceDesc} numberOfLines={2}>{svc.description}</Text>}
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    {svc.price && <Text style={styles.servicePrice}>{svc.price}</Text>}
+                    <TouchableOpacity style={styles.enquireBtn} onPress={() => setEnquiryVisible(true)}>
+                      <Text style={styles.enquireBtnText}>Enquire</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )) : (
+                <Text style={styles.noReviews}>No services listed yet.</Text>
+              )}
+            </View>
+          )}
+
+          {/* Products tab */}
+          {activeTab === 'products' && (
+            <View style={styles.section}>
+              <Text style={styles.noReviews}>No products listed yet.</Text>
+            </View>
+          )}
+
+          <View style={{ height: Spacing.xxl + 60 }} />
         </View>
       </ScrollView>
 
@@ -450,13 +553,16 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.md },
   ratingNum: { fontSize: FontSize.base, fontWeight: '700', color: Colors.text, marginLeft: 4 },
   ratingCount: { fontSize: FontSize.sm, color: Colors.textMuted },
-  actions: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
-  actionBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    borderWidth: 1.5, borderColor: Colors.primary, borderRadius: Radius.full, paddingVertical: 10,
+  actions: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md, justifyContent: 'center' },
+  actionItem: { alignItems: 'center', gap: 6, minWidth: 60 },
+  actionCircle: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: Colors.primaryBg,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1.5, borderColor: Colors.primary,
   },
-  actionBtnPrimary: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  actionBtnText: { color: Colors.primary, fontWeight: '700', fontSize: FontSize.sm },
+  actionCirclePrimary: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  actionLabel: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: '600', textAlign: 'center' },
   detailsCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.md, ...Shadow.sm, marginBottom: Spacing.md, gap: 10 },
   detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   detailText: { flex: 1, fontSize: FontSize.base, color: Colors.text, lineHeight: 22 },
@@ -487,4 +593,64 @@ const styles = StyleSheet.create({
   noReviews: { fontSize: FontSize.sm, color: Colors.textMuted, textAlign: 'center', paddingVertical: Spacing.md },
   starRow: { flexDirection: 'row', gap: Spacing.sm, marginVertical: Spacing.sm },
   reviewDisclaimer: { fontSize: FontSize.xs, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.sm, lineHeight: 17 },
+
+  /* Stats row */
+  statsRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: Spacing.md, marginBottom: Spacing.md, ...Shadow.sm,
+  },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: FontSize.lg, fontWeight: '800', color: Colors.primary },
+  statLabel: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 2 },
+  statDivider: { width: 1, height: 32, backgroundColor: Colors.border },
+
+  /* Exclusive Offers */
+  offerCard: {
+    width: 160, backgroundColor: Colors.surface,
+    borderRadius: Radius.xl, padding: Spacing.md, ...Shadow.sm,
+    gap: 8,
+  },
+  offerBadge: {
+    borderRadius: Radius.sm, paddingVertical: 4, paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+  },
+  offerBadgeText: { color: '#fff', fontWeight: '800', fontSize: FontSize.sm },
+  offerTitle: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.text },
+  offerValid: { fontSize: FontSize.xs, color: Colors.textMuted },
+  offerCode: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: Colors.primaryBg, borderRadius: Radius.sm,
+    paddingHorizontal: 8, paddingVertical: 5,
+    borderWidth: 1, borderColor: Colors.primary + '30',
+  },
+  offerCodeText: { fontSize: FontSize.xs, fontWeight: '700', color: Colors.primary, letterSpacing: 0.5 },
+
+  /* Tabs */
+  tabsBar: {
+    flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: Colors.border,
+    marginBottom: Spacing.md,
+  },
+  tabBtn: {
+    flex: 1, paddingVertical: 12, alignItems: 'center',
+    borderBottomWidth: 2, borderBottomColor: 'transparent', marginBottom: -2,
+  },
+  tabBtnActive: { borderBottomColor: Colors.primary },
+  tabBtnText: { fontSize: FontSize.base, fontWeight: '600', color: Colors.textMuted },
+  tabBtnTextActive: { color: Colors.primary },
+
+  /* Services */
+  serviceRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: Spacing.md, marginBottom: Spacing.sm, ...Shadow.sm,
+  },
+  serviceName: { fontSize: FontSize.base, fontWeight: '700', color: Colors.text, marginBottom: 4 },
+  serviceDesc: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 18 },
+  servicePrice: { fontSize: FontSize.sm, fontWeight: '700', color: Colors.primary, marginBottom: 8 },
+  enquireBtn: {
+    backgroundColor: Colors.primary, borderRadius: Radius.full,
+    paddingHorizontal: 14, paddingVertical: 6,
+  },
+  enquireBtnText: { color: '#fff', fontWeight: '700', fontSize: FontSize.xs },
 });
