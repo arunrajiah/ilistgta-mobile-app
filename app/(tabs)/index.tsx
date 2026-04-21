@@ -18,6 +18,7 @@ import CouponCard from '@/components/CouponCard';
 import BannerCard from '@/components/BannerCard';
 import { useLang } from '@/lib/i18n';
 import { useAppConfig } from '@/lib/appConfig';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
