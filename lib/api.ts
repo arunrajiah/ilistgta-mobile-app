@@ -96,9 +96,10 @@ export async function getListingBySlug(slug: string) {
 
 // ── Events ───────────────────────────────────────────────────
 export async function getEvents(params: {
-  category?: string; city?: string; page?: number; limit?: number;
+  query?: string; category?: string; city?: string; page?: number; limit?: number;
 } = {}) {
   const q = new URLSearchParams();
+  if (params.query)    q.set('query', params.query);
   if (params.category) q.set('category', params.category);
   if (params.city)     q.set('city', params.city);
   if (params.page)     q.set('page', String(params.page));
@@ -112,8 +113,9 @@ export async function getEventBySlug(slug: string) {
 }
 
 // ── Coupons ───────────────────────────────────────────────────
-export async function getCoupons(params: { page?: number; limit?: number } = {}) {
+export async function getCoupons(params: { category?: string; page?: number; limit?: number } = {}) {
   const q = new URLSearchParams();
+  if (params.category) q.set('category', params.category);
   if (params.page)  q.set('page', String(params.page));
   if (params.limit) q.set('limit', String(params.limit));
 

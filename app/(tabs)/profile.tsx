@@ -123,6 +123,24 @@ export default function ProfileScreen() {
         { icon: 'mail-outline', label: t('profile.myEnquiries'), onPress: () => router.push('/enquiries' as Href) },
       ],
     },
+    {
+      title: 'General',
+      items: [
+        { icon: 'chatbubbles-outline', label: 'Q&A Participation', onPress: () => {} },
+        { icon: 'star-outline', label: 'Ratings & Review', onPress: () => {} },
+        { icon: 'headset-outline', label: 'Customer Support', onPress: () => router.push('/help' as Href) },
+        { icon: 'help-circle-outline', label: 'Help & Feedback', onPress: () => router.push('/help' as Href) },
+        { icon: 'information-circle-outline', label: t('profile.about'), onPress: () => router.push('/about' as Href) },
+      ],
+    },
+    {
+      title: 'Options',
+      items: [
+        { icon: 'newspaper-outline', label: 'Newsletter', onPress: () => {} },
+        { icon: 'chatbubble-outline', label: 'Text Messages', onPress: () => {} },
+        { icon: 'call-outline', label: 'Phone Calls', onPress: () => {} },
+      ],
+    },
     ...(isVendor ? [{
       title: 'Vendor Tools',
       items: [
@@ -136,10 +154,19 @@ export default function ProfileScreen() {
       title: 'Settings & Info',
       items: [
         { icon: 'settings-outline', label: t('profile.accountSettings'), onPress: () => router.push('/account-settings' as Href) },
+        { icon: 'cash-outline', label: 'Currency: USD', onPress: () => {} },
+        { icon: 'globe-outline', label: `Language: ${lang === 'en' ? 'English' : 'Tamil'}`, onPress: () => router.push('/onboarding/language' as any) },
+        { icon: 'link-outline', label: 'Linked Accounts', onPress: () => {} },
         { icon: 'newspaper-outline', label: t('profile.blogArticles'), onPress: () => router.push('/blog' as Href) },
-        { icon: 'help-circle-outline', label: t('profile.help'), onPress: () => router.push('/help' as Href) },
-        { icon: 'information-circle-outline', label: t('profile.about'), onPress: () => router.push('/about' as Href) },
         { icon: 'chatbubble-ellipses-outline', label: t('profile.contact'), onPress: () => router.push('/contact' as Href) },
+      ],
+    },
+    {
+      title: 'More',
+      items: [
+        { icon: 'shield-outline', label: 'Privacy Policy', onPress: () => {} },
+        { icon: 'accessibility-outline', label: 'Accessibility', onPress: () => {} },
+        { icon: 'document-text-outline', label: 'Terms of Use', onPress: () => {} },
       ],
     },
   ];

@@ -39,6 +39,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@types/react": "~18.3.0",
+    "puppeteer-core": "^24.42.0",
     "typescript": "~5.8.3"
   }
 }

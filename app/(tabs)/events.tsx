@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, RefreshControl, ScrollView,
+  ActivityIndicator, RefreshControl, ScrollView, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,14 @@ import EventCard from '@/components/EventCard';
 import { useLang } from '@/lib/i18n';
 
 const PAGE_SIZE = 12;
+const DEFAULT_CATEGORIES = [
+  { id: '_music', name: 'Music', slug: 'music', icon: '🎵' },
+  { id: '_workshops', name: 'Workshops', slug: 'workshops', icon: '🛠️' },
+  { id: '_food', name: 'Food', slug: 'food', icon: '🍽️' },
+  { id: '_networking', name: 'Networking', slug: 'networking', icon: '🤝' },
+  { id: '_sports', name: 'Sports', slug: 'sports', icon: '⚽' },
+  { id: '_arts', name: 'Arts', slug: 'arts', icon: '🎨' },
+];
 const GTA_CITIES = [
   'All', 'Toronto', 'Mississauga', 'Brampton', 'Markham',
   'Vaughan', 'Richmond Hill', 'Oakville', 'Burlington', 'Ajax', 'Pickering',
@@ -22,6 +30,7 @@ export default function EventsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useLang();
+  const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState('');
   const [activeCity, setActiveCity] = useState('');
@@ -42,6 +51,7 @@ export default function EventsScreen() {
     try {
       if (reset) setLoading(true); else if (pg > 1) setLoadingMore(true);
       const data = await getEvents({
+        query: search,
         category: activeCategory,
         city: activeCity || undefined,
         page: pg,
@@ -59,15 +69,32 @@ export default function EventsScreen() {
     }
   }
 
-  useEffect(() => { fetchEvents(1, true); }, [activeCategory, activeCity]);
-  const onRefresh = useCallback(() => { setRefreshing(true); fetchEvents(1, true); }, [activeCategory, activeCity]);
+  useEffect(() => { fetchEvents(1, true); }, [search, activeCategory, activeCity]);
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchEvents(1, true); }, [search, activeCategory, activeCity]);
 
   return (
     <View style={[s.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>{t('events.title')}</Text>
-        <Text style={s.headerSub}>{t('events.subtitle')}</Text>
+        <Text style={s.headerTitle}>Explore Events</Text>
+        {/* Search */}
+        <View style={s.searchBox}>
+          <Ionicons name="search" size={18} color={Colors.textMuted} />
+          <TextInput
+            style={s.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search for events..."
+            placeholderTextColor={Colors.textMuted}
+            returnKeyType="search"
+            autoCapitalize="none"
+          />
+          {!!search && (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Category filter */}
@@ -77,7 +104,7 @@ export default function EventsScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.filterList}
         >
-          {[{ id: '_all', name: 'All Events', slug: '', icon: '🎉' }, ...categories].map(cat => {
+          {[{ id: '_all', name: 'All', slug: '', icon: '🎉' }, ...(categories.length > 0 ? categories : DEFAULT_CATEGORIES)].map(cat => {
             const active = activeCategory === cat.slug;
             return (
               <TouchableOpacity
@@ -170,11 +197,18 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surfaceSecondary },
   header: {
     backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.sm,
     ...Shadow.sm,
+    gap: Spacing.sm,
   },
   headerTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.text },
-  headerSub: { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2 },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.surfaceSecondary,
+    borderRadius: Radius.xl, paddingHorizontal: Spacing.md, paddingVertical: 10,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  searchInput: { flex: 1, fontSize: FontSize.base, color: Colors.text, padding: 0 },
   filterWrap: {
     backgroundColor: Colors.surface,
     borderBottomWidth: 1, borderBottomColor: Colors.border,

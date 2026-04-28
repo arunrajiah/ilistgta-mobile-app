@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from '@/lib/auth';
 import { Colors } from '@/constants/theme';
 import { AppConfigContext, fetchAppConfig, DEFAULT_CONFIG } from '@/lib/appConfig';
@@ -18,28 +19,30 @@ const hideSplash = () => { try { SplashScreen.hideAsync(); } catch {} };
 export default function RootLayout() {
   const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [ready, setReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    // Fetch remote config first, then hide splash. Falls back to DEFAULT_CONFIG on any error.
-    // A 3-second safety timeout ensures splash always hides even if the fetch hangs.
-    const safetyTimer = setTimeout(() => {
+    const safetyTimer = setTimeout(async () => {
+      const done = await AsyncStorage.getItem('onboarding_done');
+      setShowOnboarding(!done);
       setReady(true);
       hideSplash();
     }, 3000);
 
     fetchAppConfig()
-      .then(cfg => {
+      .then(async cfg => {
         clearTimeout(safetyTimer);
-        // If the admin has set a custom API base URL, apply it for all subsequent API calls.
         if (cfg.apiBaseUrl) setApiBaseUrl(cfg.apiBaseUrl);
         setAppConfig(cfg);
+        const done = await AsyncStorage.getItem('onboarding_done');
+        setShowOnboarding(!done);
         setReady(true);
         hideSplash();
       })
-      .catch(() => {
-        // fetchAppConfig catches errors internally and returns DEFAULT_CONFIG,
-        // but guard here too so a stray rejection never blocks the splash hide.
+      .catch(async () => {
         clearTimeout(safetyTimer);
+        const done = await AsyncStorage.getItem('onboarding_done');
+        setShowOnboarding(!done);
         setReady(true);
         hideSplash();
       });
@@ -69,6 +72,10 @@ export default function RootLayout() {
       <AuthProvider>
         <StatusBar style="auto" />
         <Stack screenOptions={{ headerShown: false }}>
+          {showOnboarding && <Redirect href={'/onboarding' as any} />}
+          <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="onboarding/location" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding/language" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="business/[slug]"
@@ -91,6 +98,10 @@ export default function RootLayout() {
             options={{ headerShown: true, headerTitle: 'Forgot Password', headerTintColor: Colors.primary, presentation: 'modal' }}
           />
           <Stack.Screen
+            name="auth/verify"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="auth/reset-password"
             options={{ headerShown: true, headerTitle: 'Reset Password', headerTintColor: Colors.primary }}
           />
@@ -107,6 +118,8 @@ export default function RootLayout() {
           <Stack.Screen name="coupon-form/[id]/edit" options={{ headerShown: false }} />
           <Stack.Screen name="enquiries" options={{ headerShown: false }} />
           <Stack.Screen name="saved" options={{ headerShown: false }} />
+          <Stack.Screen name="coupon/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="account-settings" options={{ headerShown: false }} />
           <Stack.Screen name="help" options={{ headerShown: false }} />
           <Stack.Screen name="about" options={{ headerShown: false }} />

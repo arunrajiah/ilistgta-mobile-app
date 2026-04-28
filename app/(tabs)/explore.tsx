@@ -25,6 +25,8 @@ export default function ExploreScreen() {
   const [search, setSearch] = useState(params.q ?? '');
   const [activeCategory, setActiveCategory] = useState(params.category ?? '');
   const [city, setCity] = useState('');
+  const [priceFilter, setPriceFilter] = useState(false);
+  const [availableFilter, setAvailableFilter] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [page, setPage] = useState(1);
@@ -61,14 +63,14 @@ export default function ExploreScreen() {
   useEffect(() => { fetchListings(1, true); }, [search, activeCategory, city]);
   const onRefresh = useCallback(() => { setRefreshing(true); fetchListings(1, true); }, [search, activeCategory, city]);
 
-  const hasFilters = !!(search || activeCategory || city);
-  const clearFilters = () => { setSearch(''); setActiveCategory(''); setCity(''); };
+  const hasFilters = !!(search || activeCategory || city || priceFilter || availableFilter);
+  const clearFilters = () => { setSearch(''); setActiveCategory(''); setCity(''); setPriceFilter(false); setAvailableFilter(false); };
 
   return (
     <View style={[s.container, { paddingTop: insets.top }]}>
       {/* ── Header ────────────────────────────────────────────── */}
       <View style={s.header}>
-        <Text style={s.headerTitle}>Explore</Text>
+        <Text style={s.headerTitle}>Service Search</Text>
         <View style={s.searchRow}>
           <View style={s.searchBox}>
             <Ionicons name="search" size={18} color={Colors.textMuted} />
@@ -96,12 +98,26 @@ export default function ExploreScreen() {
           )}
         </View>
 
+        {/* Filter pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.pillRow}>
+          <TouchableOpacity style={[s.pill, s.pillOutline]}>
+            <Ionicons name="options-outline" size={13} color={Colors.primary} />
+            <Text style={s.pillOutlineText}>Filters</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.pill, priceFilter && s.pillActive]} onPress={() => setPriceFilter(v => !v)}>
+            <Text style={[s.pillText, priceFilter && s.pillTextActive]}>Price Range</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.pill, availableFilter && s.pillActive]} onPress={() => setAvailableFilter(v => !v)}>
+            <Text style={[s.pillText, availableFilter && s.pillTextActive]}>Booking Available</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
         {/* Result count */}
         {!loading && (
           <Text style={s.resultCount}>
             {listings.length > 0
-              ? `${listings.length}${page < totalPages ? '+' : ''} businesses found`
-              : 'No businesses found'}
+              ? `Found ${listings.length}${page < totalPages ? '+' : ''} services near you`
+              : 'No services found'}
           </Text>
         )}
       </View>
@@ -231,7 +247,19 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.primary,
   },
   clearBtnText: { color: Colors.primary, fontWeight: '700', fontSize: FontSize.xs },
-  resultCount: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 8 },
+  pillRow: { gap: Spacing.sm, paddingTop: Spacing.sm, paddingBottom: 4 },
+  pill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: Colors.surfaceSecondary,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
+  },
+  pillOutline: { borderColor: Colors.primary, backgroundColor: Colors.primaryBg },
+  pillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  pillText: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: '600' },
+  pillTextActive: { color: '#fff' },
+  pillOutlineText: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: '700' },
+  resultCount: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 6 },
 
   /* ── Filters ── */
   filterSection: {
